@@ -78,9 +78,13 @@ def main():
             parser.error("Unknown pilot instance")
         base = selected.get("base") or selected.get("base_commit")
         image_name = selected["image"]
-        allowed = (selected["manifest"],) if selected.get("manifest") else None
-    item = next(i for i in json.loads(args.first_rows.read_text())["rows"]
-                if i["row"]["instance_id"] == instance)
+        if not selected.get("manifest"):
+            parser.error(f"Pin the linux/amd64 image manifest for {instance} in the task file")
+        allowed = (selected["manifest"], selected.get("config"))
+    item = next((i for i in json.loads(args.first_rows.read_text())["rows"]
+                 if i["row"]["instance_id"] == instance), None)
+    if item is None:
+        parser.error(f"Task data is missing {instance}; prepare rows from the full Verified parquet")
     row = item["row"]
     if item["truncated_cells"] or row["base_commit"] != base or row["image"] != image_name:
         raise ValueError("Incomplete or unexpected pilot record")
@@ -97,7 +101,7 @@ def main():
               "your change before finishing.\n\n" + row["problem_statement"])
     (out / "prompt.txt").write_text(prompt)
     meta = dict(instance_id=instance, base_commit=base, image_id=image, pi="1.6.0",
-                model=MODEL, arm=args.arm, preview_budget=args.preview_tokens if mount else None, run_id=run_id, network="none", wall_limit_seconds=WALL_SECONDS,
+                image_manifest=allowed[0], model=MODEL, arm=args.arm, preview_budget=args.preview_tokens if mount else None, run_id=run_id, network="none", wall_limit_seconds=WALL_SECONDS,
                 max_calls=args.max_calls, context_window=CONTEXT_WINDOW, status="setup", grade_status="pending",
                 env_build_ok=None, resolved=None)
     write_json(out / "run.json", meta)

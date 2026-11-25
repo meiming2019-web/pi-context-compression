@@ -39,7 +39,7 @@ runs/setup/venv/bin/python bench/runner.py \
   --arm B --preview-tokens 128 --max-calls 64
 ```
 
-For the frozen 50-task set, pass `--task-file bench/tasks/holdout50.json --instance <id>`. The `first_rows` argument must contain a row for every requested instance (the HF `first-rows` endpoint only covers the first page; use the full Verified parquet for the 50-task run).
+For the 50-task set, download the full [Verified parquet at the frozen revision](https://huggingface.co/datasets/SWE-bench/SWE-bench_Verified/resolve/78f471bf655a3137b2e8a75af1501690ec009ec3/data/test-00000-of-00001.parquet) (SHA-256 `030cfd7f2a704c4c0226e7f104c725a3b41230b1d3517f9c915ad7ea5be3fa25`). Run `python bench/prepare_holdout.py verified.parquet runs/setup/rows50.json` in the evaluation venv, then supply this JSON as the first positional argument and pass `--task-file bench/tasks/holdout50.json --instance <id>`. The export contains grading data and stays on the host. Pull the linux/amd64 image by its recorded manifest digest and tag it with the task's official image name. The runner accepts the pinned manifest or its pinned config ID according to the Docker image store, and records both the expected manifest and the actual image ID.
 
 `--arm A` uses stock Pi; `B` and `C` mount the extension and select the policy through `PI_PREVIEW_ARM`. `--max-calls` defaults to 32; the paired experiment used 64. The wall limit is 900 s.
 
