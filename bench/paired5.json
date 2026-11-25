@@ -1,0 +1,84 @@
+{
+  "seed": 20261125,
+  "model": "gpt-4.1-mini-2025-04-14",
+  "max_calls": 64,
+  "wall_seconds": 900,
+  "preview_tokens": 128,
+  "tasks": [
+    {
+      "instance_id": "django__django-11066",
+      "rounds": [
+        [
+          "C",
+          "B",
+          "A"
+        ],
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ]
+    },
+    {
+      "instance_id": "django__django-11133",
+      "rounds": [
+        [
+          "C",
+          "A",
+          "B"
+        ],
+        [
+          "B",
+          "A",
+          "C"
+        ]
+      ]
+    },
+    {
+      "instance_id": "django__django-11163",
+      "rounds": [
+        [
+          "C",
+          "B",
+          "A"
+        ],
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ]
+    },
+    {
+      "instance_id": "django__django-11292",
+      "rounds": [
+        [
+          "C",
+          "B",
+          "A"
+        ],
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ]
+    },
+    {
+      "instance_id": "django__django-11603",
+      "rounds": [
+        [
+          "C",
+          "B",
+          "A"
+        ],
+        [
+          "A",
+          "B",
+          "C"
+        ]
+      ]
+    }
+  ]
+}
