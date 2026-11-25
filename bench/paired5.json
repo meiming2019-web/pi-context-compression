@@ -9,19 +9,49 @@
       "instance_id": "django__django-11066",
       "rounds": [
         [
-          "C",
-          "B",
-          "A"
-        ],
-        [
           "A",
           "B",
           "C"
+        ],
+        [
+          "C",
+          "B",
+          "A"
         ]
       ]
     },
     {
       "instance_id": "django__django-11133",
+      "rounds": [
+        [
+          "B",
+          "A",
+          "C"
+        ],
+        [
+          "C",
+          "A",
+          "B"
+        ]
+      ]
+    },
+    {
+      "instance_id": "django__django-11163",
+      "rounds": [
+        [
+          "B",
+          "C",
+          "A"
+        ],
+        [
+          "A",
+          "C",
+          "B"
+        ]
+      ]
+    },
+    {
+      "instance_id": "django__django-11292",
       "rounds": [
         [
           "C",
@@ -31,36 +61,6 @@
         [
           "B",
           "A",
-          "C"
-        ]
-      ]
-    },
-    {
-      "instance_id": "django__django-11163",
-      "rounds": [
-        [
-          "C",
-          "B",
-          "A"
-        ],
-        [
-          "A",
-          "B",
-          "C"
-        ]
-      ]
-    },
-    {
-      "instance_id": "django__django-11292",
-      "rounds": [
-        [
-          "C",
-          "B",
-          "A"
-        ],
-        [
-          "A",
-          "B",
           "C"
         ]
       ]
