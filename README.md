@@ -14,7 +14,13 @@
 
 ## 当前进度
 
-已核对本机 Pi 版本为 `1.6.0`。首个里程碑 M0 是跑通一题 A 组：在题目环境里执行测试，收集相对原始提交的补丁，在干净的独立容器用官方评分器评分。
+M0 已完成。原版 Pi 1.6.0 使用 `gpt-4.1-mini-2025-04-14` 运行了试跑题 `astropy__astropy-12907`。Pi 自验 11 项通过，SWE-bench 5.0.2 独立容器评分为 `resolved: true`。2 项 FAIL_TO_PASS 与 13 项 PASS_TO_PASS 均通过。本题从正式样本中剔除。
+
+这次基线用了 24 次模型响应。Pi 记录的非缓存输入为 15,722 tokens，缓存读取为 144,128 tokens，输出为 1,469 tokens。B/C 尚待实现和评测。
+
+复现命令见 [M0 单题复现](bench/README.md)。本地共享产物位于 `runs/m0-a-01/`，run ID 为 `m0-213d1c64bf5c`。提交的补丁、prediction 里的补丁和评分器实际使用的补丁三者字节一致，SHA-256 为 `62a53d8d1b2f2e539f8c672424aff0956e3f3c2648e8fe020584199477af279d`。
+
+本机使用 arm64 上的 amd64 仿真。官方评分脚本尝试重新安装 Astropy 时 GCC 段错误，随后在预装环境中运行 pytest，15 项通过。额外用新的同镜像容器应用同一补丁，确认预装 Python 导入 `/testbed/astropy/modeling/separable.py`，Git blob 为 `3252330e`，与模型补丁目标一致。详见本地 `test_output.txt` 和 `runs/m0-a-01/import-check.txt`。
 
 ## 当前分工和接口
 
