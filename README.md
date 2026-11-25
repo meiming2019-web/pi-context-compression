@@ -22,6 +22,8 @@ M0 已完成。原版 Pi 1.6.0 使用 `gpt-4.1-mini-2025-04-14` 运行了试跑�
 
 本机使用 arm64 上的 amd64 仿真。官方评分脚本尝试重新安装 Astropy 时 GCC 段错误，随后在预装环境中运行 pytest，15 项通过。额外用新的同镜像容器应用同一补丁，确认预装 Python 导入 `/testbed/astropy/modeling/separable.py`，Git blob 为 `3252330e`，与模型补丁目标一致。详见本地 `test_output.txt` 和 `runs/m0-a-01/import-check.txt`。
 
+M0 审查已完成。runner 现在单独标记评分环境构建失败、隔离可疑补丁，并在超时或调用上限时保留用量与部分补丁。四个断网容器场景已验证，复核方式见 [运行器说明](bench/README.md#审查后的记账和判分)。
+
 ## 当前分工和接口
 
 - **Codex 主责代码、测试和运行。** 先在 `bench/` 跑通一题原版 Pi 的 runner、补丁收集和官方评分，再在 `extension/` 实现 B/C 预览、归档回读和 token 预算测试。评测产物写入 `runs/`，由 Codex 修复审查发现的问题。

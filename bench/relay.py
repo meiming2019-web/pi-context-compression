@@ -28,17 +28,43 @@ class LocalEndpoint(BaseHTTPRequestHandler):
         self.wfile.write(response)
 
 
-def forward(process):
+def provider_usage(body):
+    for line in body.split(b"\n"):
+        if not line.startswith(b"data:"):
+            continue
+        data = line[5:].strip()
+        if data == b"[DONE]" or not data:
+            continue
+        try:
+            usage = json.loads(data).get("usage")
+            if usage:
+                cached = usage.get("prompt_tokens_details", {}).get("cached_tokens", 0)
+                return {"input": usage["prompt_tokens"] - cached, "cacheRead": cached,
+                        "output": usage["completion_tokens"]}
+        except (KeyError, ValueError, TypeError, AttributeError):
+            continue
+    return None
+
+
+def forward(process, journal):
     """Host side of the pipe. Accept only ordinary function tools for this model."""
+    def record(**fields):
+        journal.write(json.dumps(fields) + "\n")
+        journal.flush()
+
     calls = 0
     for line in process.stdout:
         payload = base64.b64decode(line)
         request = json.loads(payload)
-        calls += 1
-        if (calls > MAX_CALLS or request.get("model") != MODEL or
-                any(tool.get("type") != "function" for tool in request.get("tools", []))):
+        if calls >= MAX_CALLS:
+            record(event="limit_hit")
             status, kind, body = 403, "application/json", b'{"error":{"message":"M0 relay limit"}}'
+        elif (request.get("model") != MODEL or
+                any(tool.get("type") != "function" for tool in request.get("tools", []))):
+            status, kind, body = 403, "application/json", b'{"error":{"message":"Unsupported model or tool"}}'
         else:
+            calls += 1
+            record(event="sent", call=calls)
             api = urllib.request.Request(
                 "https://api.openai.com/v1/chat/completions", data=payload,
                 headers={"Authorization": "Bearer " + os.environ["OPENAI_API_KEY"],
@@ -54,9 +80,13 @@ def forward(process):
                 body = json.dumps({"error": {"message": "Upstream HTTP %d" % status}}).encode()
             except OSError:
                 status, kind, body = 502, "application/json", b'{"error":{"message":"Upstream connection failed"}}'
+            record(event="response", call=calls, status=status, usage=provider_usage(body))
         reply = [status, kind, base64.b64encode(body).decode()]
-        process.stdin.write(json.dumps(reply).encode() + b"\n")
-        process.stdin.flush()
+        try:
+            process.stdin.write(json.dumps(reply).encode() + b"\n")
+            process.stdin.flush()
+        except (BrokenPipeError, ValueError):
+            return
 
 
 if __name__ == "__main__":

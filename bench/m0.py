@@ -1,15 +1,16 @@
 """Run the preselected Verified pilot on stock Pi, then grade its patch."""
 import argparse
-import hashlib
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import threading
+import time
 import uuid
 
-from relay import MODEL, forward
+from outcomes import account, collect, grade_result
+from relay import MAX_CALLS, MODEL, forward
 
 INSTANCE = "astropy__astropy-12907"
 BASE = "d16bfe05a744909de4b27f5875fe0d4ed41ce607"
@@ -20,13 +21,21 @@ NODE = "/opt/pi/bin/node"
 CLI = "/opt/pi/node_modules/@earendil-works/pi-coding-agent/dist/bundle/cli.js"
 ENV_PATH = "/opt/pi/bin:/opt/miniconda3/envs/testbed/bin:/usr/local/bin:/usr/bin:/bin"
 
+WALL_SECONDS = 900
+CONTEXT_WINDOW = 128000
+PI_FLAGS = ("--offline", "--no-extensions", "--no-mcp", "--no-skills", "--no-context-files",
+            "--no-prompt-templates", "--no-approve", "--tools", "read,bash,edit,write",
+            "--provider", "pilot", "--model", MODEL, "--mode", "json")
+
 
 def run(*cmd, **kwargs):
     return subprocess.run(cmd, check=True, **kwargs)
 
 
 def write_json(path, data):
-    path.write_text(json.dumps(data, indent=2) + "\n")
+    temp = path.with_suffix(".tmp")
+    temp.write_text(json.dumps(data, indent=2) + "\n")
+    temp.replace(path)
 
 
 def main():
@@ -55,7 +64,9 @@ def main():
               "your change before finishing.\n\n" + row["problem_statement"])
     (out / "prompt.txt").write_text(prompt)
     meta = dict(instance_id=INSTANCE, base_commit=BASE, image_id=image, pi="1.6.0",
-                model=MODEL, arm="A", run_id=run_id, network="none", wall_limit_seconds=900)
+                model=MODEL, arm="A", run_id=run_id, network="none", wall_limit_seconds=WALL_SECONDS,
+                max_calls=MAX_CALLS, context_window=CONTEXT_WINDOW, status="setup", grade_status="pending",
+                env_build_ok=None, resolved=None)
     write_json(out / "run.json", meta)
     container = run("docker", "run", "-d", "--network", "none", "--platform", "linux/amd64",
                     "--security-opt", "no-new-privileges", "--mount",
@@ -63,7 +74,8 @@ def main():
                     IMAGE, "sleep", "infinity", capture_output=True, text=True).stdout.strip()
     docker = ["docker", "exec", "-i"]
     agent = [*docker, "-u", "nonroot", "-e", "HOME=/home/nonroot", "-e", "PATH=" + ENV_PATH,
-             "-e", "PI_CODING_AGENT_DIR=/home/nonroot/pi", "-w", "/testbed", container]
+             "-e", "PI_CODING_AGENT_DIR=/home/nonroot/pi",
+             "-e", "PI_PREVIEW_ARCHIVE_DIR=/home/nonroot/pi-preview-archive", "-w", "/testbed", container]
     try:
         # The image has a setup commit and additional Git refs. Expose only the task base.
         run(*docker, container, "bash", "-euc", """
@@ -82,57 +94,67 @@ def main():
             raise ValueError("Unexpected Pi version")
         config = {"providers": {"pilot": {"baseUrl": "http://127.0.0.1:9741/v1",
                   "api": "openai-completions", "apiKey": "local-only", "models": [
-                      {"id": MODEL, "contextWindow": 128000, "maxTokens": 4096,
+                      {"id": MODEL, "contextWindow": CONTEXT_WINDOW, "maxTokens": 4096,
                        "compat": {"supportsUsageInStreaming": True}}]}}}
-        run(*agent, "sh", "-ec", "mkdir -p ~/pi && cat > ~/pi/models.json",
+        run(*agent, "sh", "-ec", "mkdir -p ~/pi ~/pi-preview-archive && cat > ~/pi/models.json",
             input=json.dumps(config).encode())
         run("docker", "cp", str(Path(__file__).with_name("relay.py")), container + ":/tmp/relay.py")
-        with (out / "relay.log").open("wb") as relay_log, subprocess.Popen(
-            [*docker, container, "/usr/bin/python3", "-u", "/tmp/relay.py"],
-            stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=relay_log,
-        ) as relay:
+        with (
+            (out / "requests.jsonl").open("w") as journal,
+            (out / "relay.log").open("wb") as relay_log,
+            subprocess.Popen([*docker, container, "/usr/bin/python3", "-u", "/tmp/relay.py"],
+                             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=relay_log) as relay,
+        ):
+            if relay.stdout.readline() != b"ready\n":
+                raise RuntimeError("Local model endpoint did not start")
+            worker = threading.Thread(target=forward, args=(relay, journal))
+            worker.start()
             try:
-                if relay.stdout.readline() != b"ready\n":
-                    raise RuntimeError("Local model endpoint did not start")
-                worker = threading.Thread(target=forward, args=(relay,), daemon=True)
-                worker.start()
+                command = [*agent, "timeout", "--kill-after=5s", f"{WALL_SECONDS}s",
+                           NODE, CLI, *PI_FLAGS, "-p", prompt]
                 with (out / "events.jsonl").open("wb") as events, (out / "pi.stderr").open("wb") as err:
-                    run(*agent, NODE, CLI, "--offline", "--no-extensions", "--no-mcp", "--no-skills",
-                        "--no-context-files", "--no-prompt-templates", "--no-approve", "--tools",
-                        "read,bash,edit,write", "--provider", "pilot", "--model", MODEL,
-                        "--mode", "json", "-p", prompt, stdout=events, stderr=err, timeout=900)
+                    start = time.monotonic()
+                    try:
+                        result = subprocess.run(command, stdout=events, stderr=err, timeout=WALL_SECONDS + 15)
+                        code = result.returncode
+                        timed_out = code == 124 or (code == 137 and time.monotonic() - start >= WALL_SECONDS)
+                    except subprocess.TimeoutExpired:
+                        code, timed_out = None, True
             finally:
+                freeze = subprocess.run([*docker, container, "sh", "-c",
+                                         "pkill -STOP -u nonroot || test $? = 1"])
                 relay.terminate()
-        with (out / "events.jsonl").open("rb") as events:
-            messages = (json.loads(line) for line in events)
-            finals = [e["message"] for e in messages if e.get("type") == "message_end"
-                      and e["message"].get("role") == "assistant"]
-        if not finals or finals[-1].get("stopReason") != "stop":
-            raise RuntimeError("Pi did not finish normally. Inspect events.jsonl and pi.stderr")
-        meta["model_turns"] = len(finals)
-        meta["pi_usage"] = {k: sum(m.get("usage", {}).get(k, 0) for m in finals)
-                            for k in ["input", "cacheRead", "cacheWrite", "output"]}
-        run(*agent, "git", "add", "-A")
-        patch = run(*agent, "git", "diff", "--cached", "--binary", BASE, capture_output=True).stdout
-        (out / "model.patch").write_bytes(patch)
-        meta["patch_sha256"] = hashlib.sha256(patch).hexdigest()
+                relay.wait()
+                worker.join()
+        meta.update(account(out, code, timed_out))
         write_json(out / "run.json", meta)
-        prediction = dict(instance_id=INSTANCE, model_name_or_path=model_name, model_patch=patch.decode())
+        try:
+            # Stop orphaned bash tools before snapshotting their working tree.
+            freeze.check_returncode()
+            patch, patch_info = collect(agent, BASE, out)
+        except subprocess.CalledProcessError as exc:
+            meta.update(grade_status="patch_collection_error", collection_exit_code=exc.returncode)
+            write_json(out / "run.json", meta)
+            return
+        meta.update(patch_info)
+        if patch == "":
+            meta.update(grade_status="empty_patch", resolved=False)
+        write_json(out / "run.json", meta)
+        if not patch:
+            print(f"{INSTANCE}: {meta['status']}, {meta['grade_status']}")
+            return
+        prediction = dict(instance_id=INSTANCE, model_name_or_path=model_name, model_patch=patch)
         (out / "predictions.jsonl").write_text(json.dumps(prediction) + "\n")
     finally:
         run("docker", "rm", "-f", container, stdout=subprocess.DEVNULL)
     with (out / "grader.log").open("wb") as log:
-        run(sys.executable, "-m", "swebench.harness.run_evaluation", "--dataset_name",
+        grader = subprocess.run([sys.executable, "-m", "swebench.harness.run_evaluation", "--dataset_name",
             str(out / "grader-input.json"), "--predictions_path", str(out / "predictions.jsonl"),
-            "--instance_ids", INSTANCE, "--run_id", run_id, "--max_workers", "1",
+            "--instance_ids", INSTANCE, "--run_id", run_id, "--max_workers", "1"],
             cwd=out, stdout=log, stderr=subprocess.STDOUT)
-    report = json.loads(next(out.glob(f"*{run_id}*.json")).read_text())
-    if INSTANCE not in report["resolved_ids"] + report["unresolved_ids"]:
-        raise RuntimeError("No official test verdict. Inspect grader.log and the run report.")
-    applied = out / "logs" / "run_evaluation" / run_id / model_name / INSTANCE / "patch.diff"
-    if applied.read_bytes() != patch:
-        raise RuntimeError("Grader patch differs from collected patch")
-    print(f"{INSTANCE} resolved={INSTANCE in report['resolved_ids']} report in {out}")
+    meta.update(grade_result(out, run_id, model_name, INSTANCE, grader.returncode))
+    write_json(out / "run.json", meta)
+    print(f"{INSTANCE}: {meta['status']}, {meta['grade_status']}, resolved={meta['resolved']}")
 
 
 if __name__ == "__main__":
