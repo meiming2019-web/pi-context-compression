@@ -27,7 +27,7 @@ Five Django tasks from a conditional A-solved subset, two independent rounds per
 
 **B preserved all eight A passes with zero regressions** and is the default. It is not uniformly cheaper: B is worse than A on 2 of 5 tasks, so the 22.7% is a five-task total.
 
-C gained one pass (`11292`, round 2) and lost none, but it also hit the 64-request cap once. Its all-run input is +17.4% versus B, and that total is 34% one cap failure; completed-only C is 9/9, 1,019,514 tokens, $0.1470, which is cheaper per pass than B. The extra pass is **n=1**, so this is a tradeoff to investigate, not a stable head+tail advantage. [Full decomposition](docs/RESULTS.md).
+C gained one pass (`11292`, round 2) and lost none, but it also hit the 64-request cap once. Its all-run input is +17.4% versus B, and that total is 34% one cap failure; completed-only C is 9/9, 1,019,514 tokens, $0.1470, which is cheaper per pass than B. The first head+tail preview in that run arrived after C's first successful edit, so the head cannot explain that fix; treat the extra pass as unresolved. It is **n=1**, not a stable head+tail advantage. [Full decomposition](docs/RESULTS.md).
 
 ## Quick demo
 

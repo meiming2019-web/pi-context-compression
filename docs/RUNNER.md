@@ -39,6 +39,8 @@ runs/setup/venv/bin/python bench/runner.py \
   --arm B --preview-tokens 128 --max-calls 64
 ```
 
+For the frozen 50-task set, pass `--task-file bench/tasks/holdout50.json --instance <id>`. The `first_rows` argument must contain a row for every requested instance (the HF `first-rows` endpoint only covers the first page; use the full Verified parquet for the 50-task run).
+
 `--arm A` uses stock Pi; `B` and `C` mount the extension and select the policy through `PI_PREVIEW_ARM`. `--max-calls` defaults to 32; the paired experiment used 64. The wall limit is 900 s.
 
 ## Isolation and artifacts

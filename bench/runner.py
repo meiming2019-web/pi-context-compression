@@ -44,6 +44,7 @@ def main():
     parser.add_argument("pi_linux", type=Path, help="Linux bin/node and Pi node_modules")
     parser.add_argument("output", type=Path, help="New directory for this attempt")
     parser.add_argument("--instance", default=INSTANCE, help="Instance from a pinned experiment manifest")
+    parser.add_argument("--task-file", type=Path, help="Task manifest: a list or {\"tasks\": [...]} (e.g. bench/tasks/holdout50.json)")
     parser.add_argument("--arm", choices=["A", "B", "C"], default="A")
     parser.add_argument("--max-calls", type=int, default=MAX_CALLS, help="Maximum forwarded model requests per attempt")
     parser.add_argument("--preview-tokens", type=int, default=256)
@@ -66,13 +67,18 @@ def main():
     if instance == INSTANCE:
         base, image_name, allowed = BASE, IMAGE, (MANIFEST, CONFIG)
     else:
-        tasks = json.loads((Path(__file__).parent / "tasks" / "pilot3.json").read_text())
-        tasks.extend(json.loads(Path(__file__).with_name("calibration10.json").read_text()))
+        if args.task_file:
+            raw = json.loads(args.task_file.read_text())
+            tasks = raw.get("tasks", []) if isinstance(raw, dict) else raw
+        else:
+            tasks = json.loads((Path(__file__).parent / "tasks" / "pilot3.json").read_text())
+            tasks.extend(json.loads((Path(__file__).parent / "tasks" / "calibration10.json").read_text()))
         selected = next((t for t in tasks if t["instance_id"] == instance), None)
         if not selected:
             parser.error("Unknown pilot instance")
-        base, image_name = selected["base"], selected["image"]
-        allowed = (selected["manifest"],)
+        base = selected.get("base") or selected.get("base_commit")
+        image_name = selected["image"]
+        allowed = (selected["manifest"],) if selected.get("manifest") else None
     item = next(i for i in json.loads(args.first_rows.read_text())["rows"]
                 if i["row"]["instance_id"] == instance)
     row = item["row"]

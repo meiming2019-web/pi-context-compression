@@ -4,7 +4,7 @@
 
 All five tasks come from the Django subset that stock Pi had solved at least once. Each task has two independent rounds; each round runs A, B, C once. A = stock Pi; B = 128-token tail; C = the same budget split between head and tail. Fixed Pi 1.6.0, `gpt-4.1-mini-2025-04-14`, 64 requests, 900 s. The official SWE-bench Verified harness graded every run; every patch and build record was inspected.
 
-**Across these five tasks ×2 rounds, tail-only B matched A's 8 passes, cutting total input 22.7% and estimated cost 27.6%. Head+tail C passed 9, with 9.2% lower input than A and 17.4% higher input than B. C's only extra pass is 11292 round 2. At the same 128-token budget, the value of keeping the head varies by task. All five tasks were selected from A-solved tasks; the sample cannot establish an accuracy improvement or statistical non-inferiority.**
+**Across these five tasks ×2 rounds, tail-only B matched A's 8 passes, cutting total input 22.7% and estimated cost 27.6%. Head+tail C passed 9, with 9.2% lower input than A and 17.4% higher input than B. C's only extra pass is 11292 round 2; its first head+tail preview arrived after C's first successful edit, so the head cannot explain that fix. At the same 128-token budget, the value of keeping the head varies by task. All five tasks were selected from A-solved tasks; the sample cannot establish an accuracy improvement or statistical non-inferiority.**
 
 ## Per-task comparison
 
