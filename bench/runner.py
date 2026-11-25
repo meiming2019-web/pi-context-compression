@@ -167,6 +167,12 @@ def main():
         meta["agent_wall_seconds"] = round(time.monotonic() - start, 2)
         meta.update(account(out, code, timed_out))
         meta.update(preview_metrics(out))
+        if meta["relay_calls"] == 0:
+            # A native startup crash can leave a core dump in the repository.
+            # Without a model request there is no agent patch to collect or grade.
+            meta.update(grade_status="agent_start_error", resolved=None)
+            write_json(out / "run.json", meta)
+            return
         write_json(out / "run.json", meta)
         if mount:
             receipt = subprocess.run([*agent, "cat", "/home/nonroot/pi-preview-archive/active.json"],
