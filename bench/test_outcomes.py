@@ -4,7 +4,7 @@ import subprocess
 import tempfile
 import unittest
 
-from outcomes import account, build_check, collect, grade_result
+from outcomes import account, build_check, collect, grade_result, preview_metrics
 from relay import provider_usage
 
 
@@ -31,6 +31,24 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(meta["calls_without_usage"], 1)
         self.assertEqual(meta["known_cost_usd"], 0.0000076)
         self.assertIsNone(meta["cost_usd"])
+
+    def test_readbacks_match_relative_and_native_archive_paths(self):
+        archive = "/home/nonroot/pi-preview-archive/log-000001.txt"
+        events = [{"type": "tool_execution_end", "toolCallId": "bash", "toolName": "bash",
+                   "result": {"content": [], "details": {"fullOutputPath": "/tmp/pi-native",
+                              "logPreview": {"path": archive}}}}]
+        for call, path in enumerate(["../home/nonroot/pi-preview-archive/log-000001.txt",
+                                     "/tmp/pi-native", "unknown-link"]):
+            events.extend([
+                {"type": "tool_execution_start", "toolCallId": str(call), "args": {"path": path}},
+                {"type": "tool_execution_end", "toolCallId": str(call), "toolName": "read",
+                 "result": {"content": [{"type": "text", "text": "x"}]}},
+            ])
+        (self.out / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events))
+        report = preview_metrics(self.out)
+        self.assertEqual([r["path"] for r in report["readbacks"]], [archive, archive])
+        self.assertEqual([r["repeated"] for r in report["readbacks"]], [False, True])
+        self.assertEqual(report["unmatched_reads"], [{"call": "2", "path": "unknown-link"}])
 
     def test_build_is_checked_only_inside_the_install_step(self):
         log = self.out / "test_output.txt"

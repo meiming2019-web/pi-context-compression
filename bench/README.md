@@ -56,4 +56,6 @@ runs/setup/venv/bin/python bench/probe_preview.py runs/setup/first-rows.json run
 
 单题模型运行沿用 `bench/m0.py`，附加 `--arm B --preview-tokens 128` 或 `--arm C --preview-tokens 128`。默认 A 只加载 Pi 内置工具。B/C 使用同一组 flags，额外挂载同一扩展并以环境变量选臂。每次使用新的结果目录。
 
-`run.json` 的 `previews` 记录触发调用的原展示 token、实际展示 token、归档方式或失败原因。`readbacks` 记录对已知归档绝对路径的 read 请求、offset、limit、重复范围、错误及返回给模型的文本字节数（包含 Pi 的提示）。`bash_literal` 表示 bash 命令包含已知归档路径，变量和别名可能漏记。原始事件保存在 `events.jsonl`；回读增加的模型输入已进入整题 usage。正式多题运行前仍需验证相应镜像的构建和评分。
+`run.json` 的 `previews` 记录触发调用的原展示 token、实际展示 token、归档方式或失败原因。`readbacks` 记录对已知归档绝对路径的 read 请求、offset、limit、重复范围、错误及返回给模型的文本字节数（包含 Pi 的提示）。`bash_literal` 表示 bash 命令包含已知归档路径，变量和别名可能漏记。对于 read，计数器会按 `/testbed` 解析相对路径，展开 `~/`，并匹配已知的 Pi 原生归档路径。其他路径进入 `unmatched_reads`，其中也可能含指向同一文件的其他符号链接。原始事件保存在 `events.jsonl`，回读增加的模型输入已进入整题 usage。正式多题运行前仍需验证相应镜像的构建和评分。
+
+扩展成功注册 `tool_result` 后才写入回执；激活前会清除旧回执。离线探针在容器内读取归档文件计算 SHA-256，并与确定性生成的全文比对。
