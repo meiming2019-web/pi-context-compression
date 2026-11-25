@@ -39,3 +39,20 @@ class RelayLimitTests(unittest.TestCase):
                 events = [json.loads(line) for line in journal.getvalue().splitlines()]
                 self.assertEqual([e["event"] for e in events], ["sent", "response"] * cap + ["limit_hit"])
                 self.assertEqual([e["call"] for e in events[:-1:2]], list(range(1, cap + 1)))
+
+    def test_interrupted_chunked_response_does_not_kill_relay(self):
+        class BrokenStream(LocalResponse):
+            def read(self):
+                raise relay.http.client.IncompleteRead(b"partial SSE")
+
+        request = base64.b64encode(json.dumps({"model": relay.MODEL}).encode()) + b"\n"
+        process = SimpleNamespace(stdout=io.BytesIO(request * 2), stdin=io.BytesIO())
+        journal = io.StringIO()
+        with patch.dict("os.environ", OPENAI_API_KEY="unit-test"), patch.object(
+            relay.urllib.request, "urlopen", side_effect=[BrokenStream(), LocalResponse(b"data: [DONE]\n")]
+        ):
+            relay.forward(process, journal, max_calls=2)
+        self.assertEqual([json.loads(line)[0] for line in process.stdin.getvalue().splitlines()], [502, 200])
+        responses = [e for e in map(json.loads, journal.getvalue().splitlines()) if e["event"] == "response"]
+        self.assertEqual([r["call"] for r in responses], [1, 2])
+        self.assertIsNone(responses[0]["usage"])

@@ -1,5 +1,6 @@
 """One fixed model endpoint for an offline Docker container. No host key enters it."""
 import base64
+import http.client
 import json
 import os
 import sys
@@ -78,7 +79,7 @@ def forward(process, journal, max_calls=MAX_CALLS):
             except urllib.error.HTTPError as exc:
                 status, kind = exc.code, "application/json"
                 body = json.dumps({"error": {"message": "Upstream HTTP %d" % status}}).encode()
-            except OSError:
+            except (OSError, http.client.HTTPException):
                 status, kind, body = 502, "application/json", b'{"error":{"message":"Upstream connection failed"}}'
             record(event="response", call=calls, status=status, usage=provider_usage(body))
         reply = [status, kind, base64.b64encode(body).decode()]
