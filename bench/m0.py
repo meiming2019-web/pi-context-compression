@@ -45,8 +45,11 @@ def main():
     parser.add_argument("output", type=Path, help="New directory for this attempt")
     parser.add_argument("--instance", default=INSTANCE, help="M0 or an instance in pilot3.json")
     parser.add_argument("--arm", choices=["A", "B", "C"], default="A")
+    parser.add_argument("--max-calls", type=int, default=MAX_CALLS, help="Maximum forwarded model requests per attempt")
     parser.add_argument("--preview-tokens", type=int, default=256)
     args = parser.parse_args()
+    if args.max_calls < 1:
+        parser.error("--max-calls must be positive")
     if not os.environ.get("OPENAI_API_KEY"):
         parser.error("Set OPENAI_API_KEY on the host")
     extension = Path(__file__).resolve().parents[1] / "extension"
@@ -88,7 +91,7 @@ def main():
     (out / "prompt.txt").write_text(prompt)
     meta = dict(instance_id=instance, base_commit=base, image_id=image, pi="1.6.0",
                 model=MODEL, arm=args.arm, preview_budget=args.preview_tokens if mount else None, run_id=run_id, network="none", wall_limit_seconds=WALL_SECONDS,
-                max_calls=MAX_CALLS, context_window=CONTEXT_WINDOW, status="setup", grade_status="pending",
+                max_calls=args.max_calls, context_window=CONTEXT_WINDOW, status="setup", grade_status="pending",
                 env_build_ok=None, resolved=None)
     write_json(out / "run.json", meta)
     container = run("docker", "run", "-d", "--network", "none", "--platform", "linux/amd64",
@@ -130,7 +133,7 @@ def main():
         ):
             if relay.stdout.readline() != b"ready\n":
                 raise RuntimeError("Local model endpoint did not start")
-            worker = threading.Thread(target=forward, args=(relay, journal))
+            worker = threading.Thread(target=forward, args=(relay, journal, args.max_calls))
             worker.start()
             try:
                 command = [*agent, "timeout", "--kill-after=5s", f"{WALL_SECONDS}s",

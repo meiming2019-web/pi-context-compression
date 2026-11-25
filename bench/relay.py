@@ -46,7 +46,7 @@ def provider_usage(body):
     return None
 
 
-def forward(process, journal):
+def forward(process, journal, max_calls=MAX_CALLS):
     """Host side of the pipe. Accept only ordinary function tools for this model."""
     def record(**fields):
         journal.write(json.dumps(fields) + "\n")
@@ -56,7 +56,7 @@ def forward(process, journal):
     for line in process.stdout:
         payload = base64.b64decode(line)
         request = json.loads(payload)
-        if calls >= MAX_CALLS:
+        if calls >= max_calls:
             record(event="limit_hit")
             status, kind, body = 403, "application/json", b'{"error":{"message":"M0 relay limit"}}'
         elif (request.get("model") != MODEL or
