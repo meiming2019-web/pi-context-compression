@@ -19,18 +19,18 @@ const event = {
 
 const directory = await mkdtemp(join(tmpdir(), "pi-preview-demo-"));
 try {
-  console.log(`示例测试日志：${lines.length} 行，${tokenCount(output)} tokens，退出码 1`);
+  console.log(`Sample log: ${lines.length} lines, ${tokenCount(output)} tokens, exit 1`);
   for (const arm of ["B", "C"]) {
     const result = await makePreviewHook(arm, 128, directory)(event);
     const meta = result?.details?.logPreview;
-    if (!meta || meta.fallback) throw new Error(`无法生成预览：${meta?.fallback ?? "未触发"}`);
-    console.log(`\n${arm} · ${arm === "B" ? "短尾" : "头尾"} · ${meta.tokens}/128 tokens`);
+    if (!meta || meta.fallback) throw new Error(`Could not render preview: ${meta?.fallback ?? "not triggered"}`);
+    console.log(`\n${arm} · ${arm === "B" ? "tail" : "head+tail"} · ${meta.tokens}/128 tokens`);
     console.log(result.content[0].text);
     const archive = await readFile(meta.path, "utf8");
     if (archive !== output || !result.isError || result.structuredContent.exit_code !== 1) {
-      throw new Error("归档或退出状态与原始结果不一致");
+      throw new Error("Archive or exit status differs from the original result");
     }
-    console.log(`从归档读取第 ${diagnosticLine} 行：${archive.split("\n")[diagnosticLine - 1]}`);
+    console.log(`Archive line ${diagnosticLine}: ${archive.split("\n")[diagnosticLine - 1]}`);
   }
 } finally {
   await rm(directory, { recursive: true, force: true });

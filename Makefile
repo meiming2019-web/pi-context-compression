@@ -9,4 +9,4 @@ test:
 
 package:
 	mkdir -p dist
-	git archive --format=zip --prefix=pi-log-preview/ -o dist/pi-log-preview-source.zip HEAD
+	git archive --format=zip --prefix=pi-context-compression/ -o dist/pi-context-compression-source.zip HEAD

@@ -1,5 +1,5 @@
 {
-  "name": "pi-log-preview",
+  "name": "pi-context-compression",
   "private": true,
   "type": "module",
   "scripts": { "demo": "node demo.mjs", "test": "node --test preview.test.mjs" },

@@ -42,11 +42,11 @@ npm run demo
 The demo feeds a 323-line test log through the real preview functions and reads the omitted middle from the archive:
 
 ```text
-示例测试日志：323 行，2261 tokens，退出码 1
-B · 短尾 · 127/128 tokens
+Sample log: 323 lines, 2261 tokens, exit 1
+B · tail · 128/128 tokens
 ...
-从归档读取第 162 行：AssertionError: expected two cart items, received one
-C · 头尾 · 126/128 tokens
+Archive line 162: AssertionError: expected two cart items, received one
+C · head+tail · 128/128 tokens
 ...
 ```
 
@@ -66,7 +66,7 @@ A real run also used the archive: on task `11133`, the model ran `tail -60` on t
 extension/   Pi extension, offline demo, extension tests
 bench/       runner, task lists, patch collection, official-grader integration, Python tests
 results/     paired5.csv — 30-row extract of the evaluation
-docs/        RESULTS, ARCHITECTURE, RUNNER, internal/
+docs/        RESULTS, ARCHITECTURE, RUNNER
 ```
 
 `runs/` is intentionally not committed (large raw traces); `results/paired5.csv` is the compact per-run extract.

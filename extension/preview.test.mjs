@@ -14,10 +14,10 @@ function bash(output, exit = 0) {
 test("both budgets include the full marker; a native archive supplies the real head", async t => {
   const dir = await mkdtemp(join(tmpdir(), "pi-test-"));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const text = "HEAD\n" + "日志📚 <|endoftext|>\n".repeat(3100) + "TAIL\n";
+  const text = "HEAD\n" + "log📚 <|endoftext|>\n".repeat(3100) + "TAIL\n";
   const path = join(dir, "native.txt");
   await writeFile(path, text);
-  const event = bash("日志\n".repeat(200) + "TAIL\n", 7);
+  const event = bash("log\n".repeat(200) + "TAIL\n", 7);
   event.structuredContent.truncated = true;
   event.details = { fullOutputPath: path, truncation: { totalLines: 3102 } };
   const markers = [];
