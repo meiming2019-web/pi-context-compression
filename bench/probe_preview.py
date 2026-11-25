@@ -1,5 +1,6 @@
 """Use real Pi and a scripted local model. No paid calls or task scores."""
 import argparse
+import hashlib
 from email.message import Message
 import io
 import json
@@ -38,12 +39,15 @@ def probe(arm, args):
     path = None
     resuming = False
     errors = []
+    history_matches = []
+    archive_hashes = {}
 
     def respond(request, **kwargs):
         nonlocal path
         messages = json.loads(request.data)["messages"]
         results = [m["content"] for m in messages if m["role"] == "tool"]
-        assert results[:len(turns)] == turns, "earlier tool message changed on the wire"
+        history_matches.append(results[:len(turns)] == turns)
+        assert history_matches[-1], "earlier tool message changed on the wire"
         turns[:] = results
         turn = len(results)
         if resuming:
@@ -81,6 +85,16 @@ def probe(arm, args):
         nonlocal resuming
         result = run(cmd, *pos, **kw)
         if result.returncode == 0 and m0.CLI in cmd and "-p" in cmd:
+            for count, text in zip([400, 3100], turns[:2]):
+                match = re.search(r"(?:Full output: |read )(/[^\s\]]+)", text)
+                if not match:
+                    continue
+                prefix = cmd[:cmd.index("timeout")]
+                sha = run([*prefix, "sha256sum", "--", match[1]], check=True,
+                          capture_output=True, text=True).stdout.split()[0]
+                expected = "HEAD_SENTINEL\n" + "".join(f"{n}\n" for n in range(1, count+1)) + "TAIL_SENTINEL\n"
+                assert sha == hashlib.sha256(expected.encode()).hexdigest()
+                archive_hashes[count] = sha
             resuming = True
             with (out / "resume-events.jsonl").open("wb") as events:
                 resumed = [*cmd[:-2], "--continue", "-p", "Read the saved log again."]
@@ -95,7 +109,9 @@ def probe(arm, args):
     meta = json.loads((out / "run.json").read_text())
     assert meta["status"] == "completed" and meta["grade_status"] == "empty_patch", meta
     assert not errors, errors
-    assert resuming and len(turns) == 5 and turns[2] == turns[3]
+    resumed_ok = resuming and len(turns) == 5 and "99\n100" in turns[-1]
+    assert resumed_ok and turns[2] == turns[3]
+    assert set(archive_hashes) == ({3100} if arm == "A" else {400, 3100})
     assert all("99\n100" in text for text in turns[2:])
     assert all("TAIL_SENTINEL" in text for text in turns[:2])
     assert ["HEAD_SENTINEL" in text for text in turns[:2]] == {
@@ -106,7 +122,8 @@ def probe(arm, args):
         assert all(p["tokens"] <= 128 for p in meta["previews"])
         assert all("exit 7" in text for text in turns[:2])
     summary = {"arm": arm, "preview_tokens": [p["tokens"] for p in meta["previews"]],
-            "readback_text": turns[2], "wire_history_stable": True, "resume_read_verified": True}
+            "readback_text": turns[2], "wire_history_stable": bool(history_matches) and all(history_matches),
+            "resume_read_verified": resumed_ok, "archive_sha256": archive_hashes}
     (out / "probe.json").write_text(json.dumps(summary, indent=2) + "\n")
     return summary
 

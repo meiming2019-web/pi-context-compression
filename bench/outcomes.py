@@ -2,6 +2,7 @@
 import hashlib
 import json
 from pathlib import PurePosixPath
+import posixpath
 import re
 import subprocess
 
@@ -50,7 +51,8 @@ def account(out, exit_code, timed_out):
 
 
 def preview_metrics(out):
-    calls, archives, seen = {}, set(), set()
+    calls, archives, seen = {}, {}, set()
+    unmatched = []
     previews, readbacks = [], []
     for event in records(out / "events.jsonl"):
         kind = event.get("type")
@@ -66,10 +68,16 @@ def preview_metrics(out):
             continue
         details = result.get("details") or {}
         paths = []
-        if tool == "read" and args.get("path") in archives:
-            paths = [args["path"]]
+        if tool == "read" and isinstance(args.get("path"), str):
+            requested = args["path"]
+            expanded = requested.replace("~/", "/home/nonroot/", 1) if requested.startswith("~/") else requested
+            normal = posixpath.normpath(posixpath.join("/testbed", expanded))
+            if normal in archives:
+                paths = [archives[normal]]
+            else:
+                unmatched.append(dict(call=call, path=requested))
         if tool == "bash":
-            paths = [p for p in sorted(archives) if p in args.get("command", "")]
+            paths = sorted({target for p, target in archives.items() if p in args.get("command", "")})
         for path in paths:
             offset, limit = args.get("offset"), args.get("limit")
             span = (path, offset or 1, limit)
@@ -88,8 +96,10 @@ def preview_metrics(out):
                 previews.append(dict(item, call=call))
             path = (item or {}).get("path") or details.get("fullOutputPath")
             if path:
-                archives.add(path)
-    return dict(previews=previews, readbacks=readbacks)
+                archives[path] = path
+                if details.get("fullOutputPath"):
+                    archives[details["fullOutputPath"]] = path
+    return dict(previews=previews, readbacks=readbacks, unmatched_reads=unmatched)
 
 
 def collect(agent, base, out):

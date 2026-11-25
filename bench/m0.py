@@ -43,6 +43,7 @@ def main():
     parser.add_argument("first_rows", type=Path, help="Verified test split, HF first-rows response")
     parser.add_argument("pi_linux", type=Path, help="Linux bin/node and Pi node_modules")
     parser.add_argument("output", type=Path, help="New directory for this attempt")
+    parser.add_argument("--instance", default=INSTANCE, help="M0 or an instance in pilot3.json")
     parser.add_argument("--arm", choices=["A", "B", "C"], default="A")
     parser.add_argument("--preview-tokens", type=int, default=256)
     args = parser.parse_args()
@@ -58,14 +59,24 @@ def main():
         mount = ["--mount", f"type=bind,src={extension},dst=/opt/pi-ext,readonly"]
         config_env = ["-e", f"PI_PREVIEW_ARM={args.arm}", "-e", f"PI_PREVIEW_TOKENS={args.preview_tokens}"]
         extension_flags = ["-e", "/opt/pi-ext/index.ts"]
+    instance = args.instance
+    if instance == INSTANCE:
+        base, image_name, allowed = BASE, IMAGE, (MANIFEST, CONFIG)
+    else:
+        tasks = json.loads(Path(__file__).with_name("pilot3.json").read_text())
+        selected = next((t for t in tasks if t["instance_id"] == instance), None)
+        if not selected:
+            parser.error("Unknown pilot instance")
+        base, image_name = selected["base"], selected["image"]
+        allowed = (selected["manifest"],)
     item = next(i for i in json.loads(args.first_rows.read_text())["rows"]
-                if i["row"]["instance_id"] == INSTANCE)
+                if i["row"]["instance_id"] == instance)
     row = item["row"]
-    if item["truncated_cells"] or row["base_commit"] != BASE or row["image"] != IMAGE:
+    if item["truncated_cells"] or row["base_commit"] != base or row["image"] != image_name:
         raise ValueError("Incomplete or unexpected pilot record")
-    image = run("docker", "image", "inspect", "-f", "{{.Id}}", IMAGE,
+    image = run("docker", "image", "inspect", "-f", "{{.Id}}", image_name,
                 capture_output=True, text=True).stdout.strip()
-    if image not in (MANIFEST, CONFIG):
+    if image not in allowed:
         raise ValueError(f"Unexpected image ID {image}")
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
@@ -75,7 +86,7 @@ def main():
     prompt = ("Fix the reported bug in this repository. Run relevant local tests to verify "
               "your change before finishing.\n\n" + row["problem_statement"])
     (out / "prompt.txt").write_text(prompt)
-    meta = dict(instance_id=INSTANCE, base_commit=BASE, image_id=image, pi="1.6.0",
+    meta = dict(instance_id=instance, base_commit=base, image_id=image, pi="1.6.0",
                 model=MODEL, arm=args.arm, preview_budget=args.preview_tokens if mount else None, run_id=run_id, network="none", wall_limit_seconds=WALL_SECONDS,
                 max_calls=MAX_CALLS, context_window=CONTEXT_WINDOW, status="setup", grade_status="pending",
                 env_build_ok=None, resolved=None)
@@ -83,7 +94,7 @@ def main():
     container = run("docker", "run", "-d", "--network", "none", "--platform", "linux/amd64",
                     "--security-opt", "no-new-privileges", "--mount",
                     f"type=bind,src={args.pi_linux.resolve()},dst=/opt/pi,readonly",
-                    *mount, IMAGE, "sleep", "infinity", capture_output=True, text=True).stdout.strip()
+                    *mount, image_name, "sleep", "infinity", capture_output=True, text=True).stdout.strip()
     docker = ["docker", "exec", "-i"]
     agent = [*docker, "-u", "nonroot", "-e", "HOME=/home/nonroot", "-e", "PATH=" + ENV_PATH,
              "-e", "PI_CODING_AGENT_DIR=/home/nonroot/pi",
@@ -100,7 +111,7 @@ def main():
             test "$(git rev-list --all --count)" = 1
             test -z "$(git status --porcelain)"
             chown -R nonroot:nonroot /testbed
-        """, "setup", BASE)
+        """, "setup", base)
         version = run(*agent, NODE, CLI, "--version", capture_output=True, text=True)
         if version.stdout.strip() != "1.6.0":
             raise ValueError("Unexpected Pi version")
@@ -138,6 +149,7 @@ def main():
                 relay.terminate()
                 relay.wait()
                 worker.join()
+        meta["agent_wall_seconds"] = round(time.monotonic() - start, 2)
         meta.update(account(out, code, timed_out))
         meta.update(preview_metrics(out))
         write_json(out / "run.json", meta)
@@ -151,7 +163,7 @@ def main():
         try:
             # Stop orphaned bash tools before snapshotting their working tree.
             freeze.check_returncode()
-            patch, patch_info = collect(agent, BASE, out)
+            patch, patch_info = collect(agent, base, out)
         except subprocess.CalledProcessError as exc:
             meta.update(grade_status="patch_collection_error", collection_exit_code=exc.returncode)
             write_json(out / "run.json", meta)
@@ -161,20 +173,20 @@ def main():
             meta.update(grade_status="empty_patch", resolved=False)
         write_json(out / "run.json", meta)
         if not patch:
-            print(f"{INSTANCE}: {meta['status']}, {meta['grade_status']}")
+            print(f"{instance}: {meta['status']}, {meta['grade_status']}")
             return
-        prediction = dict(instance_id=INSTANCE, model_name_or_path=model_name, model_patch=patch)
+        prediction = dict(instance_id=instance, model_name_or_path=model_name, model_patch=patch)
         (out / "predictions.jsonl").write_text(json.dumps(prediction) + "\n")
     finally:
         run("docker", "rm", "-f", container, stdout=subprocess.DEVNULL)
     with (out / "grader.log").open("wb") as log:
         grader = subprocess.run([sys.executable, "-m", "swebench.harness.run_evaluation", "--dataset_name",
             str(out / "grader-input.json"), "--predictions_path", str(out / "predictions.jsonl"),
-            "--instance_ids", INSTANCE, "--run_id", run_id, "--max_workers", "1"],
+            "--instance_ids", instance, "--run_id", run_id, "--max_workers", "1"],
             cwd=out, stdout=log, stderr=subprocess.STDOUT)
-    meta.update(grade_result(out, run_id, model_name, INSTANCE, grader.returncode))
+    meta.update(grade_result(out, run_id, model_name, instance, grader.returncode))
     write_json(out / "run.json", meta)
-    print(f"{INSTANCE}: {meta['status']}, {meta['grade_status']}, resolved={meta['resolved']}")
+    print(f"{instance}: {meta['status']}, {meta['grade_status']}, resolved={meta['resolved']}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,23 @@
+[
+  {
+    "instance_id": "django__django-10554",
+    "base": "14d026cccb144c6877294ba4cd4e03ebf0842498",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-10554:latest",
+    "manifest": "sha256:3ff931f7fe4198a73adeff4bf55ec9193598e5ffe9410ab79feef463e928e01e",
+    "order": "BCA"
+  },
+  {
+    "instance_id": "django__django-10880",
+    "base": "838e432e3e5519c5383d12018e6c78f8ec7833c1",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-10880:latest",
+    "manifest": "sha256:d093c7b3ac897213dc6e607df217be05cbf0bbfca79a58ca37463ea75ba3e980",
+    "order": "CAB"
+  },
+  {
+    "instance_id": "django__django-10999",
+    "base": "36300ef336e3f130a0dadc1143163ff3d23dc843",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-10999:latest",
+    "manifest": "sha256:4dced474a58f982e59782975ab514f4a3de6ed372a80867256cd51f0a21d3be9",
+    "order": "ABC"
+  }
+]
