@@ -17,7 +17,9 @@ No summarizer model, no extra retrieval tool, and no rewriting of persisted hist
 
 ## Cross-repository result
 
-On the frozen 50-task SWE-bench Verified sample, stock Pi and the 128-token short tail each attempted 48 issues. The short tail retained **5 of 9** baseline passes. Of 44 pairs with valid outcomes, A alone passed four and B alone passed two. On the **31 pairs with complete usage**, B used **1.4% less total input** and cost **6.7% more** at standard prices. Fifteen pairs used fewer input tokens and sixteen used more. The extension emitted 270 previews within budget across 45 tasks. This result does not support a general cost-saving or pass-retention claim for the fixed 128-token tail. [Paired report](docs/HOLDOUT-RESULTS.md) · [50-row CSV](results/holdout50-ab.csv).
+On the frozen 50-task SWE-bench Verified sample, stock Pi and the 128-token short tail each attempted 48 issues. The short tail retained **5 of 9** baseline passes end to end. Two B runs reached the request cap, one completed with a failing patch, and one received HTTP 502 on every request before any preview could run. Excluding that outage, the post hoc policy analysis gives **5 of 8 retained**.
+
+On the **31 pairs with complete usage**, B used **1.4% less total input** and cost **6.7% more** at standard prices. Fifteen pairs used fewer input tokens and sixteen used more. The extension emitted 270 previews within budget across 45 tasks. These results support keeping the fixed short tail optional. [Paired report](docs/HOLDOUT-RESULTS.md) · [50-row CSV](results/holdout50-ab.csv).
 
 ## Five-task pilot
 
@@ -29,7 +31,7 @@ Five Django tasks from a conditional A-solved subset, two independent rounds per
 | **B · 128-token tail** | **8/10** | **1,320,865** | **$0.1971** | **−22.7% input / −27.6% cost** |
 | C · 128-token head+tail | 9/10 | 1,551,327 | $0.2196 | −9.2% / −19.3% |
 
-**B retained all eight A passes in this pilot.** It is not uniformly cheaper: B is worse than A on 2 of 5 tasks, so the 22.7% is a five-task total.
+**B retained all eight A passes in this pilot.** B used more input on two of the five tasks. The pilot’s combination of lower cost and full retention did not replicate on the 50-task holdout.
 
 C gained one pass (`11292`, round 2) and lost none, but it also hit the 64-request cap once. Its all-run input is +17.4% versus B, and that total is 34% one cap failure; completed-only C is 9/9, 1,019,514 tokens, $0.1470, which is cheaper per pass than B. The first head+tail preview in that run arrived after C's first successful edit, so the head cannot explain that fix; treat the extra pass as unresolved. It is **n=1**, not a stable head+tail advantage. [Full decomposition](docs/RESULTS.md).
 
@@ -87,7 +89,7 @@ The suite covers 3 extension tests and 13 Python tests.
 ## Limitations
 
 - Five tasks from an A-solved conditional subset, two repeats; this is a pilot, not a population estimate or a non-inferiority proof.
-- The pilot retained eight of eight baseline passes. The cross-repository comparison retained five of nine, including one regression with no successful provider response.
+- The policy analysis excludes pytest-7571 because all four B requests returned HTTP 502. Its denominator is eight baseline passes, with one attempt per arm per issue, so the regression estimate is imprecise.
 - C's extra pass is one run; its cap failure and per-task variance mean head+tail is not a stable win at `T=128`.
 - Pi 1.6.0 / `gpt-4.1-mini` / `T=128`; results are harness- and model-specific.
 - The 22.7% is a five-task total; on two tasks the short tail uses more input than stock Pi.

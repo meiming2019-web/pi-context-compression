@@ -1,6 +1,6 @@
 # Short-tail holdout on SWE-bench Verified
 
-B retained **5 of 9** baseline passes, with 4 observed regressions and 0 missing B grades. On **31** complete usage pairs, aggregate input changed by **-1.4%** and estimated cost by **+6.7%** relative to A. The five-task pilot’s joint savings and retention did not replicate on this sample.
+B retained **5 of 8 baseline passes** in a post hoc policy analysis excluding one provider outage. Of the three observed policy regressions, two reached the request cap and one completed with a failing patch. The preregistered end-to-end result was **5 of 9** retained, including the outage as an unsuccessful attempt. On **31** complete usage pairs, aggregate input fell **1.4%** and estimated cost rose **6.7%** relative to A. The five-task pilot’s joint savings and retention did not replicate on this sample.
 
 The frozen holdout contains 50 tasks across five Python repositories. Stock Pi (A) ran first. The 128-token short-tail extension (B) made 48 model attempts. Both arms used Pi 1.6.0, gpt-4.1-mini-2025-04-14, one attempt per eligible task, a 64-request cap and a 900-second timeout. Two failed reference preflights remain in the extract.
 
@@ -18,7 +18,14 @@ Both arms returned a validated outcome on 44 tasks. B passed two tasks that A fa
 | sphinx-doc/sphinx | 1 | 0 | 0 | 6 | 3 |
 | sympy/sympy | 2 | 1 | 2 | 5 | 0 |
 
-Two-sided exact McNemar p=0.688. The observed regression fraction is 4/9 with a two-sided 95% Clopper–Pearson interval of 13.7% to 78.8%.
+On pytest-7571, all four B requests returned HTTP 502. The agent received zero successful responses and emitted zero previews. The runner recorded an empty patch and a failed outcome. The post hoc policy analysis excludes that task from both the paired test and the baseline-pass denominator. It includes capped runs and runs with no preview when the model received a successful response.
+
+| Analysis | Valid pairs | A passes retained | A passes lost (exact 95% CI on loss fraction) | A only / B only | Exact McNemar p |
+|---|---:|---:|---|---:|---:|
+| Preregistered end-to-end, including the outage | 44 | 5/9 | 4/9 (13.7%–78.8%) | 4 / 2 | 0.6875 |
+| Post hoc policy analysis, excluding the outage | 43 | 5/8 | 3/8 (8.5%–75.5%) | 3 / 2 | 1.0000 |
+
+Both intervals are two-sided Clopper–Pearson intervals. Both paired tests are two-sided. Of the three policy losses, xarray-7233 and sympy-15875 reached the 64-request cap with empty patches. Django-11333 completed naturally and its patch failed testing. These outcomes describe one attempt per arm on each issue.
 
 ## Whole-task input and estimated cost
 
@@ -41,6 +48,11 @@ The A ledger is complete on 32 tasks including five A passes. Each delta below r
 | sympy/sympy | 7 | 3 | 0 | 4 | 131,364.0 | -110,081.0 |
 
 ### Estimated USD
+
+| Cost accounting | A | B | Paired comparison |
+|---|---:|---:|---|
+| Sent requests missing usage | 25 / 1,507 | 5 / 1,794 | 31 tasks have complete usage in both arms |
+| Estimated cost on those 31 tasks | $1.470505 | $1.569347 | +6.7% |
 
 | Cohort | Pairs | B < A | B = A | B > A | Median delta | Sum of deltas |
 |---|---:|---:|---:|---:|---:|---:|
@@ -88,7 +100,7 @@ B emitted at least one preview on 45/48 attempts. The extension emitted 270 prev
 | A | 1,630,535 | 21,458,816 | 23,089,351 | 101,375 |
 | B | 1,612,059 | 13,050,368 | 14,662,427 | 93,447 |
 
-These known totals include all returned usage, including on incomplete attempts. Paired savings above use complete usage in both arms.
+These totals cover different amounts of missing usage in A and B. Use the 31 complete pairs above to compare costs.
 
 Both phases used the same pinned images and grader, with B executed later. The first-request cache counts capture one aspect of cache reuse. Provider drift, later-turn caching, missing usage and variation between single attempts limit the cost and repair conclusions.
 
