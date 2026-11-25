@@ -1,6 +1,25 @@
 # Pi 长日志预览实验
 
-这是 Codex 和 DeepSeek 共用的本地项目。研究问题是：给 Pi 同等 token 预算的 bash 日志预览，保留头尾能否减少回读和整题成本，同时维持修复表现？
+一个 Pi 1.6.0 扩展，在 bash 工具结果进入对话时生成有 token 上限的日志预览，长输出保存在磁盘，可按行回读。扩展、离线演示和 SWE-bench Verified 的逐次结果均在本仓库。
+
+## 两分钟演示
+
+使用 Node.js 24 和 npm，在项目根目录运行：
+
+```sh
+cd extension
+npm ci
+npm run demo
+npm test
+```
+
+演示将同一份含有中段断言错误的示例日志交给扩展的实际预览函数，分别打印短尾、头尾、真实 token 数，并从磁盘读回错误所在行。演示在结束时清理临时归档，全程无需模型密钥。真实任务通过率和费用见[五题配对报告](bench/PAIRED-RESULTS.md)。
+
+要在本机 Pi 1.6.0 中使用短尾策略，可在上述 `extension/` 目录运行以下命令。每次启动创建独立归档目录，保留该目录可供后续恢复会话时回读。
+
+```sh
+PI_PREVIEW_ARM=B PI_PREVIEW_TOKENS=128 PI_PREVIEW_ARCHIVE_DIR="$(mktemp -d)" pi -e "$PWD/index.ts"
+```
 
 ## 实验约定
 
