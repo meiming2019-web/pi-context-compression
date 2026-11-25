@@ -9,7 +9,8 @@ import threading
 import time
 import uuid
 
-from outcomes import account, collect, grade_result, preview_metrics
+from grading import official_grade, retry_transient_grade
+from outcomes import account, collect, preview_metrics
 from relay import MAX_CALLS, MODEL, forward
 
 INSTANCE = "astropy__astropy-12907"
@@ -193,12 +194,9 @@ def main():
         (out / "predictions.jsonl").write_text(json.dumps(prediction) + "\n")
     finally:
         run("docker", "rm", "-f", container, stdout=subprocess.DEVNULL)
-    with (out / "grader.log").open("wb") as log:
-        grader = subprocess.run([sys.executable, "-m", "swebench.harness.run_evaluation", "--dataset_name",
-            str(out / "grader-input.json"), "--predictions_path", str(out / "predictions.jsonl"),
-            "--instance_ids", instance, "--run_id", run_id, "--max_workers", "1"],
-            cwd=out, stdout=log, stderr=subprocess.STDOUT)
-    meta.update(grade_result(out, run_id, model_name, instance, grader.returncode))
+    meta.update(official_grade(out, run_id, model_name, instance, "grader.log"))
+    write_json(out / "run.json", meta)
+    meta.update(retry_transient_grade(out, meta, model_name))
     write_json(out / "run.json", meta)
     print(f"{instance}: {meta['status']}, {meta['grade_status']}, resolved={meta['resolved']}")
 

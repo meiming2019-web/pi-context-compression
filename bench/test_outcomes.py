@@ -5,6 +5,7 @@ import tempfile
 import unittest
 
 from outcomes import account, build_check, collect, grade_result, preview_metrics
+from grading import transient_install_failure
 from relay import provider_usage
 
 
@@ -71,6 +72,13 @@ class EvidenceTests(unittest.TestCase):
             with self.subTest(text=text):
                 log.write_text(text)
                 self.assertIs(build_check(log), expected)
+
+    def test_transient_retry_is_limited_to_pip_install(self):
+        log = self.out / "test_output.txt"
+        log.write_text("+ python -m pip install -e .\nReadTimeoutError\n+ pytest\n")
+        self.assertTrue(transient_install_failure(log))
+        log.write_text("+ python -m pip install -e .\nSuccessfully installed pkg\n+ pytest\nReadTimeoutError\n")
+        self.assertFalse(transient_install_failure(log))
 
     def test_official_pass_requires_build_and_identical_patch(self):
         task = self.out / "logs/run_evaluation/id/model/task"
