@@ -1,4 +1,4 @@
-"""Run the preselected Verified pilot on the selected Pi arm, then grade its patch."""
+"""Run one Pi arm on a preselected SWE-bench Verified instance and grade its patch."""
 import argparse
 import json
 import os
@@ -66,7 +66,7 @@ def main():
     if instance == INSTANCE:
         base, image_name, allowed = BASE, IMAGE, (MANIFEST, CONFIG)
     else:
-        tasks = json.loads(Path(__file__).with_name("pilot3.json").read_text())
+        tasks = json.loads((Path(__file__).parent / "tasks" / "pilot3.json").read_text())
         tasks.extend(json.loads(Path(__file__).with_name("calibration10.json").read_text()))
         selected = next((t for t in tasks if t["instance_id"] == instance), None)
         if not selected:
@@ -84,7 +84,7 @@ def main():
         raise ValueError(f"Unexpected image ID {image}")
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
-    run_id = "m0-" + uuid.uuid4().hex[:12]
+    run_id = "run-" + uuid.uuid4().hex[:12]
     model_name = f"pi-1.6.0-{args.arm}-{MODEL}"
     write_json(out / "grader-input.json", [row])
     prompt = ("Fix the reported bug in this repository. Run relevant local tests to verify "

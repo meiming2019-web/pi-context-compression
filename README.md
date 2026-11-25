@@ -1,60 +1,93 @@
-# Pi 长日志预览实验
+# Pi Context Compression
 
-一个 Pi 1.6.0 扩展，在 bash 工具结果进入对话时生成有 token 上限的日志预览，长输出保存在磁盘，可按行回读。扩展、离线演示和 SWE-bench Verified 的逐次结果均在本仓库。
+Reversible, token-budgeted compression of long tool output for the [Pi](https://github.com/badlogic/pi-mono) coding agent.
 
-## 两分钟演示
+[Results](docs/RESULTS.md) · [Architecture](docs/ARCHITECTURE.md) · [Runner](docs/RUNNER.md) · [30-run CSV](results/paired5.csv)
 
-使用 Node.js 24 和 npm，在项目根目录运行：
+## What it does
+
+Pi puts every bash result into the conversation, and long outputs are re-billed on every later turn. This extension intercepts the `tool_result` boundary:
+
+- **Pass through** when the result fits a token budget `T`.
+- **Compress once** otherwise: archive the full log and replace the tool result with a `T`-token preview. `B` keeps the tail; `C` splits the same budget between head and tail.
+- **Stay reversible**: the preview carries the exit code, archive path, and a `read` hint; the model retrieves omitted lines with Pi's existing `read` tool.
+- **Fail open**: if archival or rendering fails, Pi's original result is returned.
+
+No summarizer model, no extra retrieval tool, and no rewriting of persisted history.
+
+## Result
+
+Five Django tasks from a conditional A-solved subset, two independent rounds per arm, 30 official-graded SWE-bench Verified runs. Fixed Pi 1.6.0, `gpt-4.1-mini-2025-04-14`, `T=128`, 64-request cap.
+
+| Arm | Pass | Total input | Estimated cost | vs A |
+|---|---:|---:|---:|---:|
+| A · stock Pi | 8/10 | 1,708,234 | $0.2721 | — |
+| **B · 128-token tail** | **8/10** | **1,320,865** | **$0.1971** | **−22.7% input / −27.6% cost** |
+| C · 128-token head+tail | 9/10 | 1,551,327 | $0.2196 | −9.2% / −19.3% |
+
+**B preserved all eight A passes with zero regressions** and is the default. It is not uniformly cheaper: B is worse than A on 2 of 5 tasks, so the 22.7% is a five-task total.
+
+C gained one pass (`11292`, round 2) and lost none, but it also hit the 64-request cap once. Its all-run input is +17.4% versus B, and that total is 34% one cap failure; completed-only C is 9/9, 1,019,514 tokens, $0.1470, which is cheaper per pass than B. The extra pass is **n=1**, so this is a tradeoff to investigate, not a stable head+tail advantage. [Full decomposition](docs/RESULTS.md).
+
+## Quick demo
+
+Requires Node.js 24 and npm; no model key.
 
 ```sh
 cd extension
 npm ci
 npm run demo
-npm test
 ```
 
-演示将同一份含有中段断言错误的示例日志交给扩展的实际预览函数，分别打印短尾、头尾、真实 token 数，并从磁盘读回错误所在行。演示在结束时清理临时归档，全程无需模型密钥。真实任务通过率和费用见[五题配对报告](bench/PAIRED-RESULTS.md)。
+The demo feeds a 323-line test log through the real preview functions and reads the omitted middle from the archive:
 
-要在本机 Pi 1.6.0 中使用短尾策略，可在上述 `extension/` 目录运行以下命令。每次启动创建独立归档目录，保留该目录可供后续恢复会话时回读。
+```text
+示例测试日志：323 行，2261 tokens，退出码 1
+B · 短尾 · 127/128 tokens
+...
+从归档读取第 162 行：AssertionError: expected two cart items, received one
+C · 头尾 · 126/128 tokens
+...
+```
+
+A real run also used the archive: on task `11133`, the model ran `tail -60` on the archived log (559 bytes). The report keeps that trace; it does not attribute the pass to the readback.
+
+## Why this is not just truncation
+
+- Reversible: the full log is on disk and addressable by line; nothing is summarized.
+- Budgeted: exit code, archive path, and read hint are counted against `T`; the final text is re-counted with the model tokenizer.
+- Native-archive aware: when Pi already truncated and saved a log, the extension hard-links or symlinks that archive and reads only its edges, instead of copying a multi-gigabyte file.
+- Cache-aware: replacement happens once at tool-result entry; the persisted message is not rewritten on later turns.
+- Fail-open: a missing archive or token-budget overrun returns Pi's original result.
+
+## Repository
+
+```text
+extension/   Pi extension, offline demo, extension tests
+bench/       runner, task lists, patch collection, official-grader integration, Python tests
+results/     paired5.csv — 30-row extract of the evaluation
+docs/        RESULTS, ARCHITECTURE, RUNNER, internal/
+```
+
+`runs/` is intentionally not committed (large raw traces); `results/paired5.csv` is the compact per-run extract.
+
+## Tests
 
 ```sh
-PI_PREVIEW_ARM=B PI_PREVIEW_TOKENS=128 PI_PREVIEW_ARCHIVE_DIR="$(mktemp -d)" pi -e "$PWD/index.ts"
+cd extension && npm ci && npm test && npm run demo
+PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=bench python3.12 -m unittest discover -s bench -v
 ```
 
-## 实验约定
+3 extension tests + 11 Python tests; CI runs the same commands.
 
-| 组别 | bash 输出预览 |
-| --- | --- |
-| A | 使用固定版本 Pi 的默认策略 |
-| B | 预算 T 内保留尾部，计入状态、提示和全文路径 |
-| C | 同样预算 T，扣除状态、提示和全文路径后，头尾各用一半 |
+## Limitations
 
-主比较为同题 C 对 B。SWE-bench Verified 提供任务，官方评分器检查最终补丁。三组固定模型、Pi 版本和运行限制。记录每题的通过情况、token 用量、费用和日志回读。
+- Five tasks from an A-solved conditional subset, two repeats; this is a pilot, not a population estimate or a non-inferiority proof.
+- B preserves 8/8 baseline passes in this sample; it does not improve accuracy.
+- C's extra pass is one run; its cap failure and per-task variance mean head+tail is not a stable win at `T=128`.
+- Pi 1.6.0 / `gpt-4.1-mini` / `T=128`; results are harness- and model-specific.
+- The 22.7% is a five-task total; on two tasks the short tail uses more input than stock Pi.
 
-## 当前进度
+## License
 
-五道锁定题的 30 次配对运行已完成并获官方判分。原版 A 通过 8/10，短尾 B 通过相同的 8/10，五题累计输入减少 22.7%，估算费用减少 27.6%。头尾 C 通过 9/10，累计输入相对 A 减少 9.2%，相对 B 增加 17.4%。11292 第一轮 C 触顶失败，这一对里 C 比 B 多用 414,651 个输入 tokens，其余九对合计少用 184,189 个。C 多通过的一次出现在 11292 的第二轮。结果适用于本模型和原版曾解出的五题。[逐题配对表与 30 次原始读数](bench/PAIRED-RESULTS.md)
-
-M0 已完成。原版 Pi 1.6.0 使用 `gpt-4.1-mini-2025-04-14` 运行了试跑题 `astropy__astropy-12907`。Pi 自验 11 项通过，SWE-bench 5.0.2 独立容器评分为 `resolved: true`。2 项 FAIL_TO_PASS 与 13 项 PASS_TO_PASS 均通过。本题从正式样本中剔除。
-
-这次基线用了 24 次模型响应。Pi 记录的非缓存输入为 15,722 tokens，缓存读取为 144,128 tokens，输出为 1,469 tokens。B/C 扩展已接入同一个单题 runner。三臂离线验证使用真实 Pi 与模拟模型响应。预算 T=128 时，400 行编号日志在 B/C 中均发出 128 tokens，3100 行编号日志均发出 127 tokens。两份日志还各有一行头标和尾标。B 只留尾标，C 同时保留头尾标。退出码 7、按行回读、重新启动 Pi 后恢复历史与回读均已核验。原始证据在本地 `runs/preview-v1/{A,B,C}/`。
-
-复现命令见 [M0 单题复现](bench/README.md)。本地共享产物位于 `runs/m0-a-01/`，run ID 为 `m0-213d1c64bf5c`。提交的补丁、prediction 里的补丁和评分器实际使用的补丁三者字节一致，SHA-256 为 `62a53d8d1b2f2e539f8c672424aff0956e3f3c2648e8fe020584199477af279d`。
-
-本机使用 arm64 上的 amd64 仿真。官方评分脚本尝试重新安装 Astropy 时 GCC 段错误，随后在预装环境中运行 pytest，15 项通过。额外用新的同镜像容器应用同一补丁，确认预装 Python 导入 `/testbed/astropy/modeling/separable.py`，Git blob 为 `3252330e`，与模型补丁目标一致。详见本地 `test_output.txt` 和 `runs/m0-a-01/import-check.txt`。
-
-M0 审查已完成。runner 现在单独标记评分环境构建失败、隔离可疑补丁，并在超时或调用上限时保留用量与部分补丁。四个断网容器场景已验证，复核方式见 [运行器说明](bench/README.md#审查后的记账和判分)。
-
-真实试跑已完成三道 Django 题的九次运行。B/C 的 14 次预览替换均在单次 128-token 预算内。真实题中归档回读观测为零。10999 上原版 Pi 的模型调用次数最少，整题费用也最低。九次中五次用满 32 个请求，四次因上限停止，本组没有通过题。[逐题结果、费用及判分缺失说明](bench/PILOT-RESULTS.md)
-
-随后对十道预先锁定的新题各跑了一次原版 Pi，上限提高到 64 次。5 题自然完成且通过，4 题自然完成且未通过，1 题触顶且判分缺失。已锁定 5 道原版曾解出的题。配对阶段每题另跑两次 A，校准运行只用于选题。[十题校准结果](bench/CALIBRATION-RESULTS.md) · [配对协议](bench/PILOT.md)
-
-## 当前分工和接口
-
-- **Codex 主责代码、测试和运行。** 先在 `bench/` 跑通一题原版 Pi 的 runner、补丁收集和官方评分，再在 `extension/` 实现 B/C 预览、归档回读和 token 预算测试。评测产物写入 `runs/`，由 Codex 修复审查发现的问题。
-- **DeepSeek 主责审查。** M0 核对题目隔离、补丁是否相对原始提交完整收集，以及官方评分报告能否追溯到该补丁。B/C 阶段核对两臂的预算、退出状态、回读与计费口径，检查结论能否由逐题数据支持。
-- **Runner 接口。** 三组使用 Pi 1.6.0 和相同的模型、工具、隔离配置与运行上限。A 组用 `pi --no-extensions` 禁用扩展发现，保留标准工具。B/C 使用相同参数，另加 `-e /path/to/extension/index.ts`。用环境变量 `PI_PREVIEW_ARM=B|C` 选择策略，`PI_PREVIEW_TOKENS` 设置共用预算。路径应在 Pi 进程所在环境中可访问。当前模型使用 o200k_base，本轮 B/C 固定 T=128。
-
-## 两边怎么协作
-
-每个里程碑由 Codex 提交代码并给出提交号、验证命令和结果路径。M0 另附题号、base commit、Pi 版本、模型、补丁与评分报告。DeepSeek 按提交审查，用文件位置、复现步骤或运行证据反馈问题。Codex 完成修复后提供对应提交，供 DeepSeek 复核。
+MIT. See [LICENSE](LICENSE).

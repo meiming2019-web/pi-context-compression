@@ -11,7 +11,7 @@ import sys
 from urllib.error import HTTPError
 from unittest.mock import patch
 
-import m0
+import runner
 import relay
 
 
@@ -84,7 +84,7 @@ def probe(arm, args):
     def run_with_resume(cmd, *pos, **kw):
         nonlocal resuming
         result = run(cmd, *pos, **kw)
-        if result.returncode == 0 and m0.CLI in cmd and "-p" in cmd:
+        if result.returncode == 0 and runner.CLI in cmd and "-p" in cmd:
             for count, text in zip([400, 3100], turns[:2]):
                 match = re.search(r"(?:Full output: |read )(/[^\s\]]+)", text)
                 if not match:
@@ -100,12 +100,12 @@ def probe(arm, args):
                 resumed = [*cmd[:-2], "--continue", "-p", "Read the saved log again."]
                 run(resumed, *pos, **{**kw, "stdout": events, "check": True})
         return result
-    argv = ["m0", str(args.first_rows), str(args.pi_linux), str(out),
+    argv = ["runner", str(args.first_rows), str(args.pi_linux), str(out),
             "--arm", arm, "--preview-tokens", "128"]
     with patch.dict("os.environ", OPENAI_API_KEY="local-fixture"), patch.object(sys, "argv", argv), \
             patch.object(relay.urllib.request, "urlopen", side_effect=endpoint), \
             patch.object(subprocess, "run", side_effect=run_with_resume):
-        m0.main()
+        runner.main()
     meta = json.loads((out / "run.json").read_text())
     assert meta["status"] == "completed" and meta["grade_status"] == "empty_patch", meta
     assert not errors, errors
