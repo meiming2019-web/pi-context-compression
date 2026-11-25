@@ -1,0 +1,51 @@
+instance_id,repo,reference_pass,model_requested,status,grade_status,official_resolved,resolved,calls,calls_without_usage,first_request_cached_tokens,uncached_input,cached_input,output,known_cost_usd,run_date_utc,same_patch_regraded,zero_request_setup_retries,issue_type,verified_difficulty
+django__django-16333,django/django,True,True,completed,infra,False,,59,1,0,34773,521856,2291,0.0697604,2026-11-25,False,0,Behavior and API contracts,<15 min fix
+sympy__sympy-19346,sympy/sympy,True,True,completed,graded,True,True,20,2,0,11849,117120,892,0.0178788,2026-11-25,False,0,"Formatting, rendering and diagnostics",15 min - 1 hour
+sphinx-doc__sphinx-8265,sphinx-doc/sphinx,True,True,timeout,graded,False,False,35,2,0,23877,205824,1087,0.0318724,2026-11-25,False,0,"Formatting, rendering and diagnostics",15 min - 1 hour
+pytest-dev__pytest-10081,pytest-dev/pytest,True,True,completed,graded,False,False,26,0,0,13729,175616,969,0.0246036,2026-11-25,True,0,Behavior and API contracts,<15 min fix
+pydata__xarray-2905,pydata/xarray,True,True,timeout,graded,False,False,19,0,0,9720,81280,1248,0.0140128,2026-11-25,False,0,Data representation and metadata,15 min - 1 hour
+django__django-11141,django/django,True,True,completed,graded,False,False,10,0,0,21061,96768,527,0.0189444,2026-11-25,False,0,Behavior and API contracts,15 min - 1 hour
+sympy__sympy-13372,sympy/sympy,True,True,completed,graded,False,False,9,0,0,5073,25984,440,0.0053316,2026-11-25,False,0,Computation and query correctness,<15 min fix
+sphinx-doc__sphinx-10614,sphinx-doc/sphinx,True,True,completed,graded,False,False,28,1,0,22003,137856,3363,0.0279676,2026-11-25,False,0,"Formatting, rendering and diagnostics",15 min - 1 hour
+pytest-dev__pytest-7571,pytest-dev/pytest,True,True,completed,graded,True,True,27,1,,16943,138624,1979,0.023806,2026-11-25,False,1,Behavior and API contracts,15 min - 1 hour
+pydata__xarray-7233,pydata/xarray,True,True,completed,graded,True,True,10,0,0,13544,37888,574,0.0101248,2026-11-25,False,0,Data representation and metadata,15 min - 1 hour
+django__django-11734,django/django,True,True,limit_hit,empty_patch,,False,64,0,0,28087,688256,1870,0.0830524,2026-11-25,False,0,Computation and query correctness,15 min - 1 hour
+sympy__sympy-24562,sympy/sympy,True,True,limit_hit,graded,False,False,64,1,0,91278,2031872,5945,0.2492104,2026-11-25,False,0,Computation and query correctness,<15 min fix
+sphinx-doc__sphinx-7910,sphinx-doc/sphinx,True,True,completed,graded,False,False,26,0,0,40465,483584,1611,0.067122,2026-11-25,False,0,"Formatting, rendering and diagnostics",<15 min fix
+pytest-dev__pytest-7236,pytest-dev/pytest,True,True,completed,graded,False,False,27,1,0,11783,113152,859,0.0174028,2026-11-25,False,0,Behavior and API contracts,15 min - 1 hour
+pydata__xarray-3993,pydata/xarray,True,True,limit_hit,graded,False,False,64,0,0,104070,2169984,8707,0.2725576,2026-11-25,False,0,Behavior and API contracts,1-4 hours
+django__django-14539,django/django,True,True,completed,graded,False,False,15,0,0,10548,84224,712,0.0137808,2026-11-25,False,0,"Formatting, rendering and diagnostics",<15 min fix
+sympy__sympy-18199,sympy/sympy,True,True,completed,graded,False,False,18,0,0,11438,65792,2207,0.0146856,2026-11-25,False,1,Computation and query correctness,1-4 hours
+sphinx-doc__sphinx-8621,sphinx-doc/sphinx,True,True,completed,graded,False,False,22,0,0,26859,219776,3454,0.0382476,2026-11-25,False,0,"Formatting, rendering and diagnostics",<15 min fix
+pytest-dev__pytest-10051,pytest-dev/pytest,True,True,completed,graded,False,False,9,0,0,4562,23168,576,0.0050632,2026-11-25,False,1,Behavior and API contracts,15 min - 1 hour
+pydata__xarray-4629,pydata/xarray,True,True,completed,graded,True,True,11,1,0,14423,22656,462,0.008774,2026-11-25,False,0,Data representation and metadata,<15 min fix
+django__django-15930,django/django,True,True,completed,empty_patch,,False,37,0,0,29455,684928,5742,0.089462,2026-11-25,False,0,Computation and query correctness,<15 min fix
+sympy__sympy-18211,sympy/sympy,True,True,limit_hit,graded,False,False,64,0,0,67127,1175808,2467,0.1483788,2026-11-25,False,0,Behavior and API contracts,15 min - 1 hour
+sphinx-doc__sphinx-11510,sphinx-doc/sphinx,True,True,completed,graded,False,False,21,0,0,33817,150272,4070,0.035066,2026-11-25,False,0,Behavior and API contracts,1-4 hours
+pytest-dev__pytest-7490,pytest-dev/pytest,True,True,completed,graded,False,False,33,0,0,31659,307200,1548,0.0458604,2026-11-25,False,0,Behavior and API contracts,15 min - 1 hour
+pydata__xarray-7393,pydata/xarray,True,True,completed,graded,False,False,12,0,0,43304,127744,644,0.0311264,2026-11-25,False,0,Data representation and metadata,15 min - 1 hour
+django__django-12858,django/django,True,True,limit_hit,empty_patch,,False,64,2,0,80690,1408256,1687,0.1758008,2026-11-25,False,0,"Formatting, rendering and diagnostics",15 min - 1 hour
+sympy__sympy-15875,sympy/sympy,True,True,completed,graded,True,True,26,0,0,27314,433408,1327,0.0563896,2026-11-25,False,0,Computation and query correctness,<15 min fix
+sphinx-doc__sphinx-8475,sphinx-doc/sphinx,False,False,,reference_failed,,,0,0,,,,,,,False,0,Compatibility and integration,<15 min fix
+pytest-dev__pytest-7432,pytest-dev/pytest,True,True,completed,graded,False,False,9,0,0,9812,24960,843,0.0077696,2026-11-25,False,0,"Formatting, rendering and diagnostics",<15 min fix
+pydata__xarray-7229,pydata/xarray,True,True,completed,graded,False,False,51,2,0,116193,870656,2101,0.1369044,2026-11-25,True,0,Data representation and metadata,15 min - 1 hour
+django__django-14787,django/django,True,True,completed,graded,False,False,26,0,0,7450,102656,3026,0.0180872,2026-11-25,False,0,Behavior and API contracts,<15 min fix
+sympy__sympy-13480,sympy/sympy,True,True,completed,graded,True,True,15,0,0,26270,65408,544,0.0179192,2026-11-25,False,0,Computation and query correctness,<15 min fix
+sphinx-doc__sphinx-10435,sphinx-doc/sphinx,False,False,,reference_failed,,,0,0,,,,,,,False,0,"Formatting, rendering and diagnostics",<15 min fix
+pytest-dev__pytest-5840,pytest-dev/pytest,True,True,completed,graded,False,False,56,1,0,51295,667648,1988,0.0904636,2026-11-25,False,0,Compatibility and integration,15 min - 1 hour
+pydata__xarray-6992,pydata/xarray,True,True,agent_error,graded,False,False,18,6,0,22723,108544,1494,0.022334,2026-11-25,False,0,Data representation and metadata,>4 hours
+django__django-11820,django/django,True,True,limit_hit,empty_patch,,False,64,0,0,91600,2171392,1747,0.2565744,2026-11-25,False,0,"Formatting, rendering and diagnostics",<15 min fix
+sympy__sympy-14976,sympy/sympy,True,True,limit_hit,graded,False,False,64,1,0,86159,1181824,6144,0.1624764,2026-11-25,False,0,Compatibility and integration,15 min - 1 hour
+sphinx-doc__sphinx-9602,sphinx-doc/sphinx,True,True,limit_hit,infra,False,,64,1,0,59910,1003648,9654,0.1397752,2026-11-25,False,0,"Formatting, rendering and diagnostics",15 min - 1 hour
+pytest-dev__pytest-7324,pytest-dev/pytest,True,True,timeout,graded,False,False,18,1,0,18390,214912,1044,0.0305176,2026-11-25,False,0,Compatibility and integration,15 min - 1 hour
+pydata__xarray-6721,pydata/xarray,True,True,completed,infra,False,,28,0,0,32151,518016,1225,0.066622,2026-11-25,True,0,Performance and resource use,15 min - 1 hour
+django__django-11333,django/django,True,True,completed,graded,True,True,22,0,0,42413,137984,957,0.0322948,2026-11-25,False,0,Performance and resource use,15 min - 1 hour
+sympy__sympy-22456,sympy/sympy,True,True,completed,graded,False,False,52,0,0,19746,437632,3870,0.0578536,2026-11-25,False,0,Behavior and API contracts,15 min - 1 hour
+sphinx-doc__sphinx-9367,sphinx-doc/sphinx,True,True,completed,graded,True,True,13,1,0,36315,124928,783,0.0282716,2026-11-25,False,0,"Formatting, rendering and diagnostics",<15 min fix
+pytest-dev__pytest-6197,pytest-dev/pytest,True,True,completed,graded,False,False,34,0,0,31121,550272,1653,0.0701204,2026-11-25,False,0,Behavior and API contracts,1-4 hours
+pydata__xarray-3151,pydata/xarray,True,True,completed,graded,False,False,22,0,0,39678,118656,1221,0.0296904,2026-11-25,False,0,Computation and query correctness,15 min - 1 hour
+django__django-13794,django/django,True,True,completed,graded,False,False,46,0,0,35613,957696,1620,0.1126068,2026-11-25,False,0,"Formatting, rendering and diagnostics",<15 min fix
+sympy__sympy-15349,sympy/sympy,True,True,completed,graded,False,False,19,0,0,9960,60800,1284,0.0121184,2026-11-25,False,0,Computation and query correctness,15 min - 1 hour
+sphinx-doc__sphinx-7590,sphinx-doc/sphinx,True,True,completed,graded,False,False,20,0,0,25320,108800,1189,0.0229104,2026-11-25,False,0,Compatibility and integration,>4 hours
+pytest-dev__pytest-5809,pytest-dev/pytest,True,True,completed,graded,True,True,6,0,0,4425,7552,333,0.003058,2026-11-25,False,0,Compatibility and integration,<15 min fix
+pydata__xarray-4094,pydata/xarray,True,True,timeout,graded,False,False,40,0,0,34540,295936,1397,0.0456448,2026-11-25,False,0,Data representation and metadata,<15 min fix

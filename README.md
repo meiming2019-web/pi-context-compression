@@ -2,7 +2,7 @@
 
 Reversible, token-budgeted compression of long tool output for the [Pi](https://github.com/badlogic/pi-mono) coding agent.
 
-[Results](docs/RESULTS.md) · [Architecture](docs/ARCHITECTURE.md) · [Runner](docs/RUNNER.md) · [30-run CSV](results/paired5.csv)
+[Paired pilot](docs/RESULTS.md) · [50-task baseline](docs/HOLDOUT-BASELINE.md) · [Architecture](docs/ARCHITECTURE.md) · [Runner](docs/RUNNER.md)
 
 ## What it does
 
@@ -28,6 +28,8 @@ Five Django tasks from a conditional A-solved subset, two independent rounds per
 **B preserved all eight A passes with zero regressions** and is the default. It is not uniformly cheaper: B is worse than A on 2 of 5 tasks, so the 22.7% is a five-task total.
 
 C gained one pass (`11292`, round 2) and lost none, but it also hit the 64-request cap once. Its all-run input is +17.4% versus B, and that total is 34% one cap failure; completed-only C is 9/9, 1,019,514 tokens, $0.1470, which is cheaper per pass than B. The first head+tail preview in that run arrived after C's first successful edit, so the head cannot explain that fix; treat the extra pass as unresolved. It is **n=1**, not a stable head+tail advantage. [Full decomposition](docs/RESULTS.md).
+
+The cross-repository baseline covers 50 prespecified tasks across five repositories. Stock Pi made 48 model attempts, with 45 valid outcomes and 9 confirmed passes. Two tasks failed reference preflight and three attempts lacked a validated grade. The short-tail comparison on this cohort is pending. [Baseline report](docs/HOLDOUT-BASELINE.md) · [50-row CSV](results/holdout50-a.csv).
 
 ## Quick demo
 
@@ -65,20 +67,20 @@ A real run also used the archive: on task `11133`, the model ran `tail -60` on t
 ```text
 extension/   Pi extension, offline demo, extension tests
 bench/       runner, task lists, patch collection, official-grader integration, Python tests
-results/     paired5.csv — 30-row extract of the evaluation
+results/     paired5.csv and holdout50-a.csv
 docs/        RESULTS, ARCHITECTURE, RUNNER
 ```
 
-`runs/` is intentionally not committed (large raw traces); `results/paired5.csv` is the compact per-run extract.
+`runs/` is intentionally not committed (large raw traces); the `results/` directory contains the compact extracts.
 
 ## Tests
 
 ```sh
-cd extension && npm ci && npm test && npm run demo
+(cd extension && npm ci && npm test && npm run demo)
 PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=bench python3.12 -m unittest discover -s bench -v
 ```
 
-3 extension tests + 11 Python tests; CI runs the same commands.
+The suite covers 3 extension tests and 13 Python tests.
 
 ## Limitations
 
