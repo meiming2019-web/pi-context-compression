@@ -49,6 +49,49 @@ def account(out, exit_code, timed_out):
                 cost_usd=estimate if len(known) == calls else None)
 
 
+def preview_metrics(out):
+    calls, archives, seen = {}, set(), set()
+    previews, readbacks = [], []
+    for event in records(out / "events.jsonl"):
+        kind = event.get("type")
+        if kind == "tool_execution_start":
+            calls[event["toolCallId"]] = event["args"]
+        if kind != "tool_execution_end":
+            continue
+        call = event["toolCallId"]
+        args = calls.pop(call, {})
+        tool = event["toolName"]
+        result = event.get("result")
+        if tool not in {"bash", "read"} or not isinstance(result, dict):
+            continue
+        details = result.get("details") or {}
+        paths = []
+        if tool == "read" and args.get("path") in archives:
+            paths = [args["path"]]
+        if tool == "bash":
+            paths = [p for p in sorted(archives) if p in args.get("command", "")]
+        for path in paths:
+            offset, limit = args.get("offset"), args.get("limit")
+            span = (path, offset or 1, limit)
+            style = "bash_literal" if tool == "bash" else "whole_requested"
+            if tool == "read" and (offset is not None or limit is not None):
+                style = "range_requested"
+            size = sum(len(c["text"].encode()) for c in result["content"] if c["type"] == "text")
+            readbacks.append(dict(call=call, path=path, kind=style, offset=offset, limit=limit,
+                                  returned_text_bytes=size, error=event.get("isError", False),
+                                  repeated=tool == "read" and span in seen))
+            if tool == "read":
+                seen.add(span)
+        if tool == "bash":
+            item = details.get("logPreview")
+            if item:
+                previews.append(dict(item, call=call))
+            path = (item or {}).get("path") or details.get("fullOutputPath")
+            if path:
+                archives.add(path)
+    return dict(previews=previews, readbacks=readbacks)
+
+
 def collect(agent, base, out):
     # A timed-out tool can leave its original index.lock behind. Work on a private copy.
     index = subprocess.check_output([*agent, "sh", "-ec",
@@ -59,6 +102,8 @@ def collect(agent, base, out):
         return subprocess.check_output([*agent, "env", "GIT_INDEX_FILE=" + index, "git", *args])
 
     cache_globs = ["**/.pytest_cache", "**/.pytest_cache/**", "**/__pycache__", "**/__pycache__/**"]
+    cache_globs += [f"**/{name}/**" for name in (".mypy_cache", ".ruff_cache", ".hypothesis")]
+    cache_globs.append("**/.coverage")
     cache_paths = [":(glob)" + pattern for pattern in cache_globs]
     omit_caches = [":(exclude,glob)" + pattern for pattern in cache_globs]
 

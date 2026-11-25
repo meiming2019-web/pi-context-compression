@@ -1,4 +1,4 @@
-"""Run the preselected Verified pilot on stock Pi, then grade its patch."""
+"""Run the preselected Verified pilot on the selected Pi arm, then grade its patch."""
 import argparse
 import json
 import os
@@ -9,7 +9,7 @@ import threading
 import time
 import uuid
 
-from outcomes import account, collect, grade_result
+from outcomes import account, collect, grade_result, preview_metrics
 from relay import MAX_CALLS, MODEL, forward
 
 INSTANCE = "astropy__astropy-12907"
@@ -43,9 +43,21 @@ def main():
     parser.add_argument("first_rows", type=Path, help="Verified test split, HF first-rows response")
     parser.add_argument("pi_linux", type=Path, help="Linux bin/node and Pi node_modules")
     parser.add_argument("output", type=Path, help="New directory for this attempt")
+    parser.add_argument("--arm", choices=["A", "B", "C"], default="A")
+    parser.add_argument("--preview-tokens", type=int, default=256)
     args = parser.parse_args()
     if not os.environ.get("OPENAI_API_KEY"):
         parser.error("Set OPENAI_API_KEY on the host")
+    extension = Path(__file__).resolve().parents[1] / "extension"
+    mount, config_env, extension_flags = [], [], []
+    if args.arm != "A":
+        if not (64 <= args.preview_tokens <= 4096):
+            parser.error("--preview-tokens must be between 64 and 4096")
+        if not (extension / "node_modules/js-tiktoken/package.json").is_file():
+            parser.error("Run npm ci --prefix extension before using B/C")
+        mount = ["--mount", f"type=bind,src={extension},dst=/opt/pi-ext,readonly"]
+        config_env = ["-e", f"PI_PREVIEW_ARM={args.arm}", "-e", f"PI_PREVIEW_TOKENS={args.preview_tokens}"]
+        extension_flags = ["-e", "/opt/pi-ext/index.ts"]
     item = next(i for i in json.loads(args.first_rows.read_text())["rows"]
                 if i["row"]["instance_id"] == INSTANCE)
     row = item["row"]
@@ -58,24 +70,24 @@ def main():
     out = args.output.resolve()
     out.mkdir(parents=True, exist_ok=False)
     run_id = "m0-" + uuid.uuid4().hex[:12]
-    model_name = "pi-1.6.0-A-" + MODEL
+    model_name = f"pi-1.6.0-{args.arm}-{MODEL}"
     write_json(out / "grader-input.json", [row])
     prompt = ("Fix the reported bug in this repository. Run relevant local tests to verify "
               "your change before finishing.\n\n" + row["problem_statement"])
     (out / "prompt.txt").write_text(prompt)
     meta = dict(instance_id=INSTANCE, base_commit=BASE, image_id=image, pi="1.6.0",
-                model=MODEL, arm="A", run_id=run_id, network="none", wall_limit_seconds=WALL_SECONDS,
+                model=MODEL, arm=args.arm, preview_budget=args.preview_tokens if mount else None, run_id=run_id, network="none", wall_limit_seconds=WALL_SECONDS,
                 max_calls=MAX_CALLS, context_window=CONTEXT_WINDOW, status="setup", grade_status="pending",
                 env_build_ok=None, resolved=None)
     write_json(out / "run.json", meta)
     container = run("docker", "run", "-d", "--network", "none", "--platform", "linux/amd64",
                     "--security-opt", "no-new-privileges", "--mount",
                     f"type=bind,src={args.pi_linux.resolve()},dst=/opt/pi,readonly",
-                    IMAGE, "sleep", "infinity", capture_output=True, text=True).stdout.strip()
+                    *mount, IMAGE, "sleep", "infinity", capture_output=True, text=True).stdout.strip()
     docker = ["docker", "exec", "-i"]
     agent = [*docker, "-u", "nonroot", "-e", "HOME=/home/nonroot", "-e", "PATH=" + ENV_PATH,
              "-e", "PI_CODING_AGENT_DIR=/home/nonroot/pi",
-             "-e", "PI_PREVIEW_ARCHIVE_DIR=/home/nonroot/pi-preview-archive", "-w", "/testbed", container]
+             "-e", "PI_PREVIEW_ARCHIVE_DIR=/home/nonroot/pi-preview-archive", *config_env, "-w", "/testbed", container]
     try:
         # The image has a setup commit and additional Git refs. Expose only the task base.
         run(*docker, container, "bash", "-euc", """
@@ -111,7 +123,7 @@ def main():
             worker.start()
             try:
                 command = [*agent, "timeout", "--kill-after=5s", f"{WALL_SECONDS}s",
-                           NODE, CLI, *PI_FLAGS, "-p", prompt]
+                           NODE, CLI, *PI_FLAGS, *extension_flags, "-p", prompt]
                 with (out / "events.jsonl").open("wb") as events, (out / "pi.stderr").open("wb") as err:
                     start = time.monotonic()
                     try:
@@ -127,7 +139,15 @@ def main():
                 relay.wait()
                 worker.join()
         meta.update(account(out, code, timed_out))
+        meta.update(preview_metrics(out))
         write_json(out / "run.json", meta)
+        if mount:
+            receipt = subprocess.run([*agent, "cat", "/home/nonroot/pi-preview-archive/active.json"],
+                                     capture_output=True, text=True)
+            if receipt.returncode or json.loads(receipt.stdout) != [args.arm, args.preview_tokens]:
+                meta.update(grade_status="extension_load_error")
+                write_json(out / "run.json", meta)
+                return
         try:
             # Stop orphaned bash tools before snapshotting their working tree.
             freeze.check_returncode()

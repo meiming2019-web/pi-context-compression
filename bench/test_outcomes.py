@@ -139,12 +139,28 @@ class CollectionTests(unittest.TestCase):
         self.assertEqual(info["changed_paths"], [])
         self.assertEqual(info["excluded_cache_paths"], sorted([staged, committed]))
 
+    def test_tracked_modified_cache_and_coverage_noise(self):
+        tracked = "pkg/__pycache__/x.pyc"
+        self.write(tracked)
+        self.git("add", "-f", tracked)
+        self.git("commit", "-qm", "base with tracked cache")
+        self.write(tracked, "changed")
+        extras = [".coverage", ".mypy_cache/index", "pkg/.ruff_cache/index", ".hypothesis/examples/db"]
+        for path in extras:
+            self.write(path)
+        self.write("src/foo.py")
+        patch, info = collect(self.agent, "HEAD", self.out)
+        self.assertEqual(info["excluded_cache_paths"], sorted([tracked, *extras]))
+        self.assertEqual(info["changed_paths"], ["src/foo.py"])
+        self.assertIn("src/foo.py", patch)
+
     def test_reserved_archive_still_quarantines_mixed_patch(self):
         self.write("pkg/mod.py")
         self.write(".pi/trace")
         self.write(".pytest_cache/v/cache/test")
         patch, info = collect(self.agent, self.base, self.out)
         self.assertIsNone(patch)
+        self.assertIn(b".pi/trace", (self.out / "model.patch").read_bytes())
         self.assertEqual(info["grade_status"], "patch_contaminated")
         self.assertEqual(info["artifact_paths"], [".pi/trace"])
         self.assertEqual(info["excluded_cache_paths"], [".pytest_cache/v/cache/test"])

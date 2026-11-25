@@ -1,0 +1,7 @@
+{
+  "name": "pi-log-preview",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test preview.test.mjs" },
+  "dependencies": { "js-tiktoken": "1.0.21" }
+}

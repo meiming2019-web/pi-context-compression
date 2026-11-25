@@ -16,7 +16,7 @@
 
 M0 已完成。原版 Pi 1.6.0 使用 `gpt-4.1-mini-2025-04-14` 运行了试跑题 `astropy__astropy-12907`。Pi 自验 11 项通过，SWE-bench 5.0.2 独立容器评分为 `resolved: true`。2 项 FAIL_TO_PASS 与 13 项 PASS_TO_PASS 均通过。本题从正式样本中剔除。
 
-这次基线用了 24 次模型响应。Pi 记录的非缓存输入为 15,722 tokens，缓存读取为 144,128 tokens，输出为 1,469 tokens。B/C 尚待实现和评测。
+这次基线用了 24 次模型响应。Pi 记录的非缓存输入为 15,722 tokens，缓存读取为 144,128 tokens，输出为 1,469 tokens。B/C 扩展已接入同一个单题 runner。三臂离线验证使用真实 Pi 与模拟模型响应。预算 T=128 时，400 行编号日志在 B/C 中均发出 128 tokens，3100 行编号日志均发出 127 tokens。两份日志还各有一行头标和尾标。B 只留尾标，C 同时保留头尾标。退出码 7、按行回读、重新启动 Pi 后恢复历史与回读均已核验。原始证据在本地 `runs/preview-v1/{A,B,C}/`；正式配对评测待运行。
 
 复现命令见 [M0 单题复现](bench/README.md)。本地共享产物位于 `runs/m0-a-01/`，run ID 为 `m0-213d1c64bf5c`。提交的补丁、prediction 里的补丁和评分器实际使用的补丁三者字节一致，SHA-256 为 `62a53d8d1b2f2e539f8c672424aff0956e3f3c2648e8fe020584199477af279d`。
 
@@ -28,7 +28,7 @@ M0 审查已完成。runner 现在单独标记评分环境构建失败、隔离�
 
 - **Codex 主责代码、测试和运行。** 先在 `bench/` 跑通一题原版 Pi 的 runner、补丁收集和官方评分，再在 `extension/` 实现 B/C 预览、归档回读和 token 预算测试。评测产物写入 `runs/`，由 Codex 修复审查发现的问题。
 - **DeepSeek 主责审查。** M0 核对题目隔离、补丁是否相对原始提交完整收集，以及官方评分报告能否追溯到该补丁。B/C 阶段核对两臂的预算、退出状态、回读与计费口径，检查结论能否由逐题数据支持。
-- **Runner 接口。** 三组使用 Pi 1.6.0 和相同的模型、工具、隔离配置与运行上限。A 组用 `pi --no-extensions` 禁用扩展发现，保留标准工具。B/C 使用相同参数，另加 `-e /path/to/extension/index.ts`；该路径为约定入口，待 Codex 实现。用环境变量 `PI_PREVIEW_ARM=B|C` 选择策略，`PI_PREVIEW_TOKENS` 设置共用预算。路径应在 Pi 进程所在环境中可访问。正式评测前一起锁定模型、tokenizer 和 T。
+- **Runner 接口。** 三组使用 Pi 1.6.0 和相同的模型、工具、隔离配置与运行上限。A 组用 `pi --no-extensions` 禁用扩展发现，保留标准工具。B/C 使用相同参数，另加 `-e /path/to/extension/index.ts`。用环境变量 `PI_PREVIEW_ARM=B|C` 选择策略，`PI_PREVIEW_TOKENS` 设置共用预算。路径应在 Pi 进程所在环境中可访问。当前模型使用 o200k_base。离线验证用 T=128，正式题集和 T 待锁定。
 
 ## 两边怎么协作
 
