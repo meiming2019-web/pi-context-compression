@@ -34,7 +34,7 @@ python -m swebench.harness.run_evaluation --dataset_name "$PWD/grader-input.json
 每个尝试保留两项状态。`status` 记录 Pi 如何结束，例如 `completed`、`timeout`、`limit_hit` 或 `agent_error`。`grade_status` 记录补丁的处置。超时或撞上限后，runner 停住遗留的工具进程，用独立 Git index 收集当时的工作树。有效的非空补丁照常送评，空补丁记为未解决。三臂沿用 M0 的 32 次转发、900 秒和 128,000 token 上下文窗口，以便比较。提示词为本实验自定义文本。
 
 - `requests.jsonl` 按请求记下开始与返回，保留超时前已发出请求的记录。取服务端 usage，将 prompt tokens 拆成未缓存输入与缓存读取。以每百万 token 的 USD 0.40、0.10、1.60 分别折算未缓存输入、缓存读取与输出。`cost_usd` 是标准价估算；若有请求缺少 usage，完整费用填 null，已知部分另存 `known_cost_usd`，缺失数记在 `calls_without_usage`。Pi 事件的用量独立保留，避免重复计费。模拟响应中的估算不产生真实账单。[模型定价](https://developers.openai.com/api/docs/models/gpt-4.1-mini)
-- 扩展应将全文与索引写入 `PI_PREVIEW_ARCHIVE_DIR`，当前为 `/home/nonroot/pi-preview-archive`。补丁保留已有跟踪文件的编辑、删除和新增源码。对本题，自动接受的新增文件限于 `astropy/` 下的源码或测试源码。其他新增路径先留待复核，出现保留的归档或缓存路径则隔离整份补丁，两者都留存原始字节和路径清单。测试文件按路径命名约定标记。不能被官方 JSON 接口无损表示的非 UTF-8 补丁也留档。
+- 扩展应将全文与索引写入 `PI_PREVIEW_ARCHIVE_DIR`，当前为 `/home/nonroot/pi-preview-archive`。收集器按 Git 规则收集相对题目 base 的修改、删除和新增文件，`added_paths` 列出新增路径。任意层级的 `.pytest_cache` 和 `__pycache__` 从最终补丁中排除，`excluded_cache_paths` 记录收集时发现的未跟踪缓存（含被忽略的文件）及相对 base 有变化的缓存。已暂存或已提交的缓存同样排除。若剩余补丁含 `.pi`、`.pi-preview` 或 `pi-preview-archive` 路径组件，整份补丁保存供复核，并标为 `patch_contaminated`。测试文件按路径命名约定标记。不能被官方 JSON 接口无损表示的非 UTF-8 补丁也留档。
 - `official_resolved` 保存官方结论。对本题只解析官方日志里实际执行的 editable pip 安装步骤。`env_build_ok` 为 false 表示有失败证据，null 表示无法验证。两者均标为 `grade_status=infra`、`resolved=null`，整次尝试及用量保留。推广到其他构建方式前应增加对应校验。正式配对分析时单列基础设施故障及缺失配对。
 
 在项目根目录运行 `PYTHONDONTWRITEBYTECODE=1 python3.12 -m unittest discover -s bench -v` 可复核日志、计费与补丁检查。另有四份断网容器验证产物位于本地 `runs/review-fixture-*-02/`。这些用真实 Pi、模拟模型响应；对有补丁的场景，测试截获评分命令并检查 prediction。它们用于验证控制流程，正式评测应剔除。

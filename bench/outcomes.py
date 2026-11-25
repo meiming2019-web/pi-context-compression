@@ -58,29 +58,35 @@ def collect(agent, base, out):
     def git(*args):
         return subprocess.check_output([*agent, "env", "GIT_INDEX_FILE=" + index, "git", *args])
 
-    def names(*filters):
-        raw = git("diff", "--cached", "--no-renames", "--name-only", "-z", *filters, base)
-        return [s.decode("utf-8", "surrogateescape") for s in raw.split(b"\0") if s]
+    cache_globs = ["**/.pytest_cache", "**/.pytest_cache/**", "**/__pycache__", "**/__pycache__/**"]
+    cache_paths = [":(glob)" + pattern for pattern in cache_globs]
+    omit_caches = [":(exclude,glob)" + pattern for pattern in cache_globs]
 
-    git("add", "-A")
-    paths = names()
-    added = names("--diff-filter=A")
-    patch = git("diff", "--cached", "--binary", base)
+    def filenames(raw):
+        return [name.decode("utf-8", "surrogateescape") for name in raw.split(b"\0") if name]
+
+    # Include ignored files in this inventory. pytest can write its own .gitignore.
+    untracked_caches = git("ls-files", "--others", "-z", "--", *cache_paths)
+    changed_caches = git("diff", "--no-renames", "--name-only", "-z", base, "--", *cache_paths)
+    excluded = sorted(set(filenames(untracked_caches) + filenames(changed_caches)))
+
+    git("add", "-A", "--", *omit_caches)
+    # A cache may already be staged or committed by the agent. Filter the diff too.
+    diff = ("diff", "--cached")
+    paths = filenames(git(*diff, "--no-renames", "--name-only", "-z", base, "--", *omit_caches))
+    added = filenames(git(*diff, "--diff-filter=A", "--no-renames", "--name-only", "-z",
+                          base, "--", *omit_caches))
+    patch = git(*diff, "--binary", base, "--", *omit_caches)
     (out / "model.patch").write_bytes(patch)
-    reserved = {".pi", ".pi-preview", "pi-preview-archive", ".pytest_cache", "__pycache__"}
+    reserved = {".pi", ".pi-preview", "pi-preview-archive"}
     artifacts = [s for s in paths if reserved.intersection(PurePosixPath(s).parts)]
     tests = [s for s in map(PurePosixPath, paths) if {"test", "tests"}.intersection(s.parts)
              or s.name.startswith("test_") or s.name.endswith("_test.py") or s.name == "conftest.py"]
-    # Reviewed for this Astropy instance. Preserve unusual new files for manual review.
-    source_suffixes = {".py", ".pyi", ".pyx", ".pxd", ".pxi", ".c", ".cpp", ".h"}
-    unexpected = [s for s in added if not
-                  (s.startswith("astropy/") and PurePosixPath(s).suffix in source_suffixes)]
-    info = dict(unexpected_new_paths=unexpected, changed_paths=paths, test_files=[str(p) for p in tests],
-                artifact_paths=artifacts, patch_sha256=hashlib.sha256(patch).hexdigest())
+    info = dict(added_paths=added, changed_paths=paths, excluded_cache_paths=excluded,
+                test_files=[str(p) for p in tests], artifact_paths=artifacts,
+                patch_sha256=hashlib.sha256(patch).hexdigest())
     if artifacts:
         return None, dict(info, grade_status="patch_contaminated", resolved=None)
-    if unexpected:
-        return None, dict(info, grade_status="patch_needs_review", resolved=None)
     try:
         return patch.decode("utf-8"), info
     except UnicodeDecodeError:

@@ -42,34 +42,17 @@ class EvidenceTests(unittest.TestCase):
         log.write_text(install + "Successfully installed astropy-5.1\n+ pytest\nERROR: bad test\n")
         self.assertTrue(build_check(log))
 
-    def test_collect_with_original_index_locked(self):
-        repo = self.out / "repo"
-        repo.mkdir()
-        agent = ["env", "TMPDIR=" + str(self.out), "sh", "-c",
-                 'cd "$0" && exec "$@"', str(repo)]
-
-        def git(*args):
-            subprocess.run([*agent, "git", *args], check=True, capture_output=True)
-
-        git("init", "-q")
-        git("-c", "user.name=Fixture", "-c", "user.email=fixture@example.org",
-            "commit", "--allow-empty", "-qm", "base")
-        (repo / ".git/index.lock").touch()
-        new = repo / "astropy/tests/test_model.py"
-        new.parent.mkdir(parents=True)
-        new.write_text("def test_result(): pass")
-        patch, meta = collect(agent, "HEAD", self.out)
-        self.assertIn("test_model.py", patch)
-        self.assertEqual(meta["test_files"], ["astropy/tests/test_model.py"])
-        (repo / "trace.json").write_text("{}")
-        patch, meta = collect(agent, "HEAD", self.out)
-        self.assertIsNone(patch)
-        self.assertEqual(meta["grade_status"], "patch_needs_review")
-        (repo / ".pi").mkdir()
-        (repo / ".pi/trace").touch()
-        patch, meta = collect(agent, "HEAD", self.out)
-        self.assertIsNone(patch)
-        self.assertEqual(meta["artifact_paths"], [".pi/trace"])
+    def test_every_editable_install_needs_success_evidence(self):
+        log = self.out / "test_output.txt"
+        cmd = "+ pip install --editable .\n"
+        ok = cmd + "Successfully installed example-1.0\n"
+        failed = cmd + "ERROR: Failed building editable for example\n"
+        unknown = cmd + "  Successfully installed build-deps\n"
+        for text, expected in [(ok + ok, True), (ok + failed, False), (failed + ok, False),
+                               (ok + unknown, None), (unknown + ok, None)]:
+            with self.subTest(text=text):
+                log.write_text(text)
+                self.assertIs(build_check(log), expected)
 
     def test_official_pass_requires_build_and_identical_patch(self):
         task = self.out / "logs/run_evaluation/id/model/task"
@@ -88,3 +71,80 @@ class EvidenceTests(unittest.TestCase):
         self.assertTrue(grade_result(self.out, "id", "model", "task", 0)["resolved"])
         (task / "patch.diff").write_bytes(b"other")
         self.assertIsNone(grade_result(self.out, "id", "model", "task", 0)["resolved"])
+
+class CollectionTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.out = Path(temp.name)
+        self.repo = self.out / "repo"
+        self.repo.mkdir()
+        self.agent = ["env", "TMPDIR=" + str(self.out), "sh", "-c",
+                      'cd "$0" && exec "$@"', str(self.repo)]
+        self.git("init", "-q")
+        self.git("config", "user.name", "Fixture")
+        self.git("config", "user.email", "fixture@example.org")
+        self.git("commit", "--allow-empty", "-qm", "base")
+        self.base = self.git("rev-parse", "HEAD").decode().strip()
+
+    def git(self, *args):
+        return subprocess.check_output(["git", "-C", str(self.repo), *args])
+
+    def write(self, name, content="fixture"):
+        path = self.repo / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+
+    def test_new_modules_data_docs_and_tests_with_locked_index(self):
+        (self.repo / ".git/index.lock").touch()
+        paths = ["src/foo.py", "pkg/mod.py", "lib/config.yaml", "astropy/data/new.json",
+                 "docs/new file.rst", "examples/notes.txt", "tests/test_model.py"]
+        for path in paths:
+            self.write(path)
+        patch, info = collect(self.agent, self.base, self.out)
+        self.assertEqual(info["added_paths"], sorted(paths))
+        self.assertEqual(info["test_files"], ["tests/test_model.py"])
+        clean = self.out / "apply"
+        subprocess.run(["git", "clone", "-q", str(self.repo), str(clean)], check=True)
+        subprocess.run(["git", "-C", str(clean), "apply", "--index", "-"], input=patch.encode(), check=True)
+        for path in paths:
+            self.assertEqual((clean / path).read_text(), "fixture")
+
+    def test_ignore_rules_do_not_change_patch(self):
+        paths = [".pytest_cache/v/cache/nodeids", "pkg/__pycache__/x.pyc",
+                 "nested/.pytest_cache/v/cache/lastfailed"]
+        self.write("src/foo.py")
+        for path in paths:
+            self.write(path)
+        patch, info = collect(self.agent, self.base, self.out)
+        self.assertEqual(info["excluded_cache_paths"], sorted(paths))
+        self.assertEqual(info["changed_paths"], ["src/foo.py"])
+        self.assertNotIn("cache", patch)
+        self.write(".gitignore", ".pytest_cache/\n__pycache__/\n")
+        self.git("add", ".gitignore")
+        self.git("commit", "-qm", "repo ignore rules")
+        ignored_patch, ignored_info = collect(self.agent, "HEAD", self.out)
+        self.assertEqual(ignored_patch, patch)
+        self.assertEqual(ignored_info, info)
+
+    def test_staged_and_committed_caches_and_cache_only_patch(self):
+        staged, committed = "pkg/__pycache__/a.pyc", ".pytest_cache/v/cache/committed"
+        self.write(committed)
+        self.git("add", "-f", committed)
+        self.git("commit", "-qm", "test cache")
+        self.write(staged)
+        self.git("add", "-f", staged)
+        patch, info = collect(self.agent, self.base, self.out)
+        self.assertEqual(patch, "")
+        self.assertEqual(info["changed_paths"], [])
+        self.assertEqual(info["excluded_cache_paths"], sorted([staged, committed]))
+
+    def test_reserved_archive_still_quarantines_mixed_patch(self):
+        self.write("pkg/mod.py")
+        self.write(".pi/trace")
+        self.write(".pytest_cache/v/cache/test")
+        patch, info = collect(self.agent, self.base, self.out)
+        self.assertIsNone(patch)
+        self.assertEqual(info["grade_status"], "patch_contaminated")
+        self.assertEqual(info["artifact_paths"], [".pi/trace"])
+        self.assertEqual(info["excluded_cache_paths"], [".pytest_cache/v/cache/test"])
