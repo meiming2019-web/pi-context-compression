@@ -60,6 +60,18 @@ This is a fixed set of three Django tasks, one run per arm per task. It has no c
 
 On 10554, B stopped after 19 calls and C used all 32; both produced empty patches, and this single pair's input delta exceeds the net total. On 10999, all three arms submitted date-parsing patches; the official report has two FAIL_TO_PASS failures for each. No task passes, so cost per solved task is undefined.
 
+## Did the preview precede an edit?
+
+Using the 20 B/C event streams, we compared the first successful bash preview with successful Pi `edit` and `write` calls by model turn. A preview can inform a tool choice on a later turn. This timing check does not capture file changes made through shell commands.
+
+| First preview | B runs | C runs |
+|---|---:|---:|
+| Before the first successful edit/write turn | 9 | 6 |
+| After edits had started, with a later edit/write turn | 1 | 1 |
+| After the final successful edit/write turn | 0 | 3 |
+
+In the only C-only pass (11292, round 2), C edited `django/core/management/base.py` on turn 16. Its four previews occurred on turns 18, 19, 21 and 27. The retained head could have influenced verification or stopping. It could not have guided the earlier edit. Treat the extra pass as an observed outcome with an unresolved cause.
+
 ## Per-run evidence
 
 | Task | Round | Arm | Stop / grade | Resolved | Requests | Uncached input | Cache read | Output | Cost USD | Previews | Archive readbacks | Unmatched reads | Cap |
