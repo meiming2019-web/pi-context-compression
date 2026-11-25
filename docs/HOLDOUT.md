@@ -24,3 +24,19 @@ Run stock Pi and the 128-token tail policy once per task, in two phases (all A f
 Use all 50 planned pairs as the primary cohort, including zero-trigger tasks. Report total input (cached plus uncached), cost, task-level paired differences and how many tasks have lower input. For repair outcomes show A-only passes, B-only passes, joint passes, joint failures and missing pairs. Define each paired delta as B minus A. Count negative, zero and positive deltas and report the median and sum for both input and estimated cost. Tabulate B-triggered and B-untriggered tasks separately, alongside the full cohort. Report cap/timeout rates and all-run totals, then recompute on pairs with both runs completed and valid. For graded binary pairs report the exact two-sided McNemar test on the discordant counts b and c. Give a 95% Clopper–Pearson interval for the regression fraction b/M conditional on the M paired baseline passes; an empty denominator is undefined. A missing B grade stays missing. Report per-repository results and how often the extension triggers. Treat issue-type and difficulty splits as descriptive, especially the two performance tasks. Report a paired interval that resamples tasks within each repository for the overall input-cost comparison. An unresolved infrastructure error or missing billable usage must not become a zero-cost run.
 
 Extending the finding to a second model, language or terminal task family requires a separate cohort, reported separately.
+
+## B analysis fixed after the baseline
+
+Baseline commit `f02f6b2` defines the eligible IDs. Keep all 50 in the report. Run B once on the 48 tasks that passed reference preflight, including the three with an unavailable A grade. Carry the two failed reference checks forward as missing. Use the frozen model, Pi version, prompt, pinned images, 128-token tail, 64-request cap and 900-second timeout.
+
+| Question | Baseline denominator | B analysis |
+|---|---:|---|
+| How many baseline repairs are retained? | 9 A passes | Show retained, regressed and missing. Count a capped run by its valid patch outcome and record its stop status separately. Use only determinate pairs for the regression interval. |
+| Does the short tail reduce whole-task input and cost? | 32 A attempts with complete usage | Include each task with complete A and B usage regardless of repair outcome. Give the final paired denominator, sign counts, median and sum for input and cost separately. |
+| Does it save cost on tasks A solved? | 5 A passes with complete usage | Apply the same completeness rule, show B's repair outcome alongside each delta, and identify the subset that both arms solved. |
+
+Measure the observed whole-task delta even when B emits no preview. Its direct preview savings are then zero, while the two independent agent trajectories can still have different costs and lengths. Report triggered and untriggered groups and per-repository outcomes with their denominators.
+
+Of 48 A attempts, 47 have zero cached tokens recorded on the first request. The first request on pytest-7571 has missing usage. Record the same fields for B. Later execution of B can affect cache reuse and prices paid for input. Interpret cost differences alongside total input and cached input.
+
+With zero regressions, the upper end of the exact two-sided 95% binomial interval is 33.6% for 9 independent paired baseline passes. Bringing it below 10% takes 36 independent paired baseline passes. Repeated runs on the same tasks measure within-task variability.
