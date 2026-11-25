@@ -43,7 +43,7 @@ def main():
     parser.add_argument("first_rows", type=Path, help="Verified test split, HF first-rows response")
     parser.add_argument("pi_linux", type=Path, help="Linux bin/node and Pi node_modules")
     parser.add_argument("output", type=Path, help="New directory for this attempt")
-    parser.add_argument("--instance", default=INSTANCE, help="M0 or an instance in pilot3.json")
+    parser.add_argument("--instance", default=INSTANCE, help="Instance from a pinned experiment manifest")
     parser.add_argument("--arm", choices=["A", "B", "C"], default="A")
     parser.add_argument("--max-calls", type=int, default=MAX_CALLS, help="Maximum forwarded model requests per attempt")
     parser.add_argument("--preview-tokens", type=int, default=256)
@@ -67,6 +67,7 @@ def main():
         base, image_name, allowed = BASE, IMAGE, (MANIFEST, CONFIG)
     else:
         tasks = json.loads(Path(__file__).with_name("pilot3.json").read_text())
+        tasks.extend(json.loads(Path(__file__).with_name("calibration10.json").read_text()))
         selected = next((t for t in tasks if t["instance_id"] == instance), None)
         if not selected:
             parser.error("Unknown pilot instance")

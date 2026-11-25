@@ -1,0 +1,94 @@
+[
+  {
+    "instance_id": "django__django-11066",
+    "base": "4b45b6c8e4d7c9701a332e80d3b1c84209dc36e2",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11066:latest",
+    "manifest": "sha256:4742b1aa9909b136ec0eb6641fbc02e18a7cb3acea53cef7ed4429d08c1ef86b",
+    "preflight_suites": [
+      "contenttypes_tests.test_operations"
+    ]
+  },
+  {
+    "instance_id": "django__django-11133",
+    "base": "879cc3da6249e920b8d54518a0ae06de835d7373",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11133:latest",
+    "manifest": "sha256:499a1f64294c5b3787c461633cec96581207248d52a4d52325a87fbff3805064",
+    "preflight_suites": [
+      "httpwrappers.tests"
+    ]
+  },
+  {
+    "instance_id": "django__django-11163",
+    "base": "e6588aa4e793b7f56f4cadbfa155b581e0efc59a",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11163:latest",
+    "manifest": "sha256:ae0b96085340fc1c0cc2962ba5ac39f9cc935cbd50fbc98229b635fd80df31a3",
+    "preflight_suites": [
+      "model_forms.tests"
+    ]
+  },
+  {
+    "instance_id": "django__django-11179",
+    "base": "19fc6376ce67d01ca37a91ef2f55ef769f50513a",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11179:latest",
+    "manifest": "sha256:f36d81831615d46d1eea34feb6c49a2815f637a28bca14105db346bf90a8bd0d",
+    "preflight_suites": [
+      "delete.tests"
+    ]
+  },
+  {
+    "instance_id": "django__django-11292",
+    "base": "eb16c7260e573ec513d84cb586d96bdf508f3173",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11292:latest",
+    "manifest": "sha256:14527bea3de0b756c25d9c9e078396f87e1862ef785f9f725ce52c9782995cdf",
+    "preflight_suites": [
+      "user_commands.tests"
+    ]
+  },
+  {
+    "instance_id": "django__django-11299",
+    "base": "6866c91b638de5368c18713fa851bfe56253ea55",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11299:latest",
+    "manifest": "sha256:47fdbfdafa1a0a41dd32c23211a8df13a051a623234220142c29b30fae760694",
+    "preflight_suites": [
+      "migrations.test_operations",
+      "queries.test_query"
+    ]
+  },
+  {
+    "instance_id": "django__django-11433",
+    "base": "21b1d239125f1228e579b1ce8d94d4d5feadd2a6",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11433:latest",
+    "manifest": "sha256:83a25f98c9db57caa9ea9da416b18078e6ecca9819788116f6e9263fdbf91930",
+    "preflight_suites": [
+      "model_forms.tests"
+    ]
+  },
+  {
+    "instance_id": "django__django-11490",
+    "base": "a7038adbd02c916315b16939b835f021c2ee8880",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11490:latest",
+    "manifest": "sha256:d4fb2ca01ba943c7bac346b65e0e51b7a28a9170a29eaeb9091adcf6a2eab4b2",
+    "preflight_suites": [
+      "queries.test_qs_combinators"
+    ]
+  },
+  {
+    "instance_id": "django__django-11555",
+    "base": "8dd5877f58f84f2b11126afbd0813e24545919ed",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11555:latest",
+    "manifest": "sha256:36c28a4ff3d57102f43c3ea25d60357c48b24ceb013126e3588b707dddd1cd36",
+    "preflight_suites": [
+      "ordering.models",
+      "ordering.tests"
+    ]
+  },
+  {
+    "instance_id": "django__django-11603",
+    "base": "f618e033acd37d59b536d6e6126e6c5be18037f6",
+    "image": "swebench/sweb.eval.x86_64.django_1776_django-11603:latest",
+    "manifest": "sha256:d2362d3fee49d087314bb6f12114fbddd08b30cc42e9848fddd0a591872963e9",
+    "preflight_suites": [
+      "aggregation.tests"
+    ]
+  }
+]
