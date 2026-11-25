@@ -1,0 +1,383 @@
+{
+  "dataset": "SWE-bench/SWE-bench_Verified",
+  "revision": "78f471bf655a3137b2e8a75af1501690ec009ec3",
+  "split": "test",
+  "selection": "Per repo select first 10 eligible IDs by ascending hex SHA256 of UTF-8(seed + \"|\" + instance_id). Interleave repos by rank. Five AB and five BA per repo.",
+  "seed": "pi-short-tail-holdout-v1",
+  "excluded": [
+    "astropy__astropy-12907",
+    "django__django-10554",
+    "django__django-10880",
+    "django__django-10999",
+    "django__django-11066",
+    "django__django-11133",
+    "django__django-11163",
+    "django__django-11179",
+    "django__django-11292",
+    "django__django-11299",
+    "django__django-11433",
+    "django__django-11490",
+    "django__django-11555",
+    "django__django-11603"
+  ],
+  "model": "gpt-4.1-mini-2025-04-14",
+  "pi": "1.6.0",
+  "arms": {
+    "A": "Pi default",
+    "B": "128-token tail"
+  },
+  "max_calls": 64,
+  "wall_seconds": 900,
+  "tasks": [
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-16333",
+      "base_commit": "60a7bd89860e504c0c33b02c78edcac87f6d1b5a",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-16333:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-19346",
+      "base_commit": "94fb720696f5f5d12bad8bc813699fd696afd2fb",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-19346:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-8265",
+      "base_commit": "b428cd2404675475a5c3dc2a2b0790ba57676202",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8265:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-10081",
+      "base_commit": "da9a2b584eb7a6c7e924b2621ed0ddaeca0a7bea",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10081:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-2905",
+      "base_commit": "7c4e2ac83f7b4306296ff9b7b51aaf016e5ad614",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-2905:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-11141",
+      "base_commit": "5d9cf79baf07fc4aed7ad1b06990532a65378155",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11141:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-13372",
+      "base_commit": "30379ea6e225e37833a764ac2da7b7fadf5fe374",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-13372:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-10614",
+      "base_commit": "ac2b7599d212af7d04649959ce6926c63c3133fa",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10614:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-7571",
+      "base_commit": "422685d0bdc110547535036c1ff398b5e1c44145",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7571:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-7233",
+      "base_commit": "51d37d1be95547059251076b3fadaa317750aab3",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-7233:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-11734",
+      "base_commit": "999891bd80b3d02dd916731a7a239e1036174885",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11734:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-24562",
+      "base_commit": "b1cb676cf92dd1a48365b731979833375b188bf2",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-24562:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-7910",
+      "base_commit": "27ac10de04697e2372d31db5548e56a7c6d9265d",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7910:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-7236",
+      "base_commit": "c98bc4cd3d687fe9b392d8eecd905627191d4f06",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7236:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-3993",
+      "base_commit": "8cc34cb412ba89ebca12fc84f76a9e452628f1bc",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-3993:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-14539",
+      "base_commit": "6a5ef557f80a8eb6a758ebe99c8bb477ca47459e",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-14539:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-18199",
+      "base_commit": "ba80d1e493f21431b4bf729b3e0452cd47eb9566",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-18199:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-8621",
+      "base_commit": "21698c14461d27933864d73e6fba568a154e83b3",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8621:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-10051",
+      "base_commit": "aa55975c7d3f6c9f6d7f68accc41bb7cadf0eb9a",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10051:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-4629",
+      "base_commit": "a41edc7bf5302f2ea327943c0c48c532b12009bc",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4629:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-15930",
+      "base_commit": "63884829acd207404f2a5c3cc1d6b4cd0a822b70",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-15930:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-18211",
+      "base_commit": "b4f1aa3540fe68d078d76e78ba59d022dd6df39f",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-18211:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-11510",
+      "base_commit": "6cb783c0024a873722952a67ebb9f41771c8eb6d",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-11510:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-7490",
+      "base_commit": "7f7a36478abe7dd1fa993b115d22606aa0e35e88",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7490:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-7393",
+      "base_commit": "41fef6f1352be994cd90056d47440fe9aa4c068f",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-7393:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-12858",
+      "base_commit": "f2051eb8a7febdaaa43bd33bf5a6108c5f428e59",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-12858:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-15875",
+      "base_commit": "b506169ad727ee39cb3d60c8b3ff5e315d443d8e",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-15875:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-8475",
+      "base_commit": "3ea1ec84cc610f7a9f4f6b354e264565254923ff",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-8475:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-7432",
+      "base_commit": "e6e300e729dd33956e5448d8be9a0b1540b4e53a",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-7229",
+      "base_commit": "3aa75c8d00a4a2d4acf10d80f76b937cadb666b7",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-7229:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-14787",
+      "base_commit": "004b4620f6f4ad87261e149898940f2dcd5757ef",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-14787:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-13480",
+      "base_commit": "f57fe3f4b3f2cab225749e1b3b38ae1bf80b62f0",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-13480:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-10435",
+      "base_commit": "f1061c012e214f16fd8790dec3c283d787e3daa8",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-10435:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-5840",
+      "base_commit": "73c5b7f4b11a81e971f7d1bb18072e06a87060f4",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5840:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-6992",
+      "base_commit": "45c0a114e2b7b27b83c9618bc05b36afac82183c",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6992:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-11820",
+      "base_commit": "c2678e49759e5c4c329bff0eeca2886267005d21",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11820:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-14976",
+      "base_commit": "9cbea134220b0b951587e11b63e2c832c7246cbc",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-14976:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-9602",
+      "base_commit": "6c38f68dae221e8cfc70c137974b8b88bd3baaab",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-9602:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-7324",
+      "base_commit": "19ad5889353c7f5f2b65cc2acd346b7a9e95dfcd",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7324:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-6721",
+      "base_commit": "cc183652bf6e1273e985e1c4b3cba79c896c1193",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-6721:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-11333",
+      "base_commit": "55b68de643b5c2d5f0a8ea7587ab3b2966021ccc",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-11333:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-22456",
+      "base_commit": "a3475b3f9ac662cd425157dd3bdb93ad7111c090",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-22456:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-9367",
+      "base_commit": "6918e69600810a4664e53653d6ff0290c3c4a788",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-9367:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-6197",
+      "base_commit": "e856638ba086fcf5bebf1bebea32d5cf78de87b4",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-6197:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-3151",
+      "base_commit": "118f4d996e7711c9aced916e6049af9f28d5ec66",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-3151:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "django/django",
+      "instance_id": "django__django-13794",
+      "base_commit": "fe886eee36be8022f34cfe59aa61ff1c21fe01d9",
+      "image": "swebench/sweb.eval.x86_64.django_1776_django-13794:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "sympy/sympy",
+      "instance_id": "sympy__sympy-15349",
+      "base_commit": "768da1c6f6ec907524b8ebbf6bf818c92b56101b",
+      "image": "swebench/sweb.eval.x86_64.sympy_1776_sympy-15349:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "sphinx-doc/sphinx",
+      "instance_id": "sphinx-doc__sphinx-7590",
+      "base_commit": "2e506c5ab457cba743bb47eb5b8c8eb9dd51d23d",
+      "image": "swebench/sweb.eval.x86_64.sphinx-doc_1776_sphinx-7590:latest",
+      "order": "BA"
+    },
+    {
+      "repo": "pytest-dev/pytest",
+      "instance_id": "pytest-dev__pytest-5809",
+      "base_commit": "8aba863a634f40560e25055d179220f0eefabe9a",
+      "image": "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5809:latest",
+      "order": "AB"
+    },
+    {
+      "repo": "pydata/xarray",
+      "instance_id": "pydata__xarray-4094",
+      "base_commit": "a64cf2d5476e7bbda099b34c40b7be1880dbd39a",
+      "image": "swebench/sweb.eval.x86_64.pydata_1776_xarray-4094:latest",
+      "order": "BA"
+    }
+  ]
+}
